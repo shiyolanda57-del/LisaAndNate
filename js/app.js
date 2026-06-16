@@ -120,6 +120,17 @@
     });
   }
 
+  function isSafeVideoLink(url) {
+    if (!url) return true;
+
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch (error) {
+      return false;
+    }
+  }
+
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -178,10 +189,6 @@
     }
   }
 
-  // =====================
-  // 动态名字渲染
-  // =====================
-
   function getLisaName() {
     return state.settings.lisaName || "Lisa";
   }
@@ -194,10 +201,6 @@
       el.textContent = template.replaceAll("{name}", name);
     });
   }
-
-  // =====================
-  // 字卡系统
-  // =====================
 
   function getDisabledSet() {
     const arr = state.cardSystem.disabledReplyItems || [];
@@ -426,10 +429,6 @@
     });
   }
 
-  // =====================
-  // 对话系统
-  // =====================
-
   function getReplyDelay() {
     const min = Number(state.settings.replyDelayMin);
     const max = Number(state.settings.replyDelayMax);
@@ -521,10 +520,6 @@
     chatList.scrollTop = chatList.scrollHeight;
   }
 
-  // =====================
-  // 碎片系统
-  // =====================
-
   function shouldReply(mode) {
     if (mode === "must") return true;
     if (mode === "silent") return false;
@@ -570,12 +565,18 @@
 
   function saveFragment() {
     const text = $("fragmentText").value.trim();
+    const videoLink = $("fragmentVideoLink").value.trim();
     const replyMode = $("fragmentReplyMode").value;
     const feedbackMode = $("fragmentFeedbackMode").value;
     const status = $("fragmentStatus");
 
-    if (!text && !selectedFragmentImage) {
-      alert("先写点东西，或者上传一张图片。");
+    if (videoLink && !isSafeVideoLink(videoLink)) {
+      alert("视频链接需要以 http:// 或 https:// 开头。");
+      return;
+    }
+
+    if (!text && !selectedFragmentImage && !videoLink) {
+      alert("先写点东西，上传一张图片，或者粘贴一个视频链接。");
       return;
     }
 
@@ -585,6 +586,7 @@
       id: makeId("frag"),
       text,
       image: selectedFragmentImage,
+      videoLink,
       createdAt: now(),
       replyMode,
       feedbackMode,
@@ -617,6 +619,7 @@
 
     $("fragmentText").value = "";
     $("fragmentImage").value = "";
+    $("fragmentVideoLink").value = "";
     $("fragmentPreview").innerHTML = "";
     selectedFragmentImage = "";
 
@@ -641,19 +644,43 @@
     return `<div class="record-status silent">${escapeHTML(name)} 这次没有回应。</div>`;
   }
 
+  function getFragmentSearchText(fragment) {
+    return [
+      formatTime(fragment.createdAt),
+      fragment.text || "",
+      fragment.videoLink || "",
+      ...(fragment.replyCards || []),
+      fragment.replyStatus || ""
+    ].join(" ").toLowerCase();
+  }
+
   function renderFragments() {
     processDueFragments();
 
     const list = $("fragmentList");
+    const searchInput = $("fragmentSearchInput");
+    const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
 
-    if (!state.fragments.length) {
-      list.innerHTML = `<div class="hint">还没有碎片。</div>`;
+    let fragments = state.fragments || [];
+
+    if (query) {
+      fragments = fragments.filter(fragment => getFragmentSearchText(fragment).includes(query));
+    }
+
+    if (!fragments.length) {
+      list.innerHTML = query
+        ? `<div class="hint">没有找到符合搜索词的碎片。</div>`
+        : `<div class="hint">还没有碎片。</div>`;
       return;
     }
 
-    list.innerHTML = state.fragments.map(fragment => {
+    list.innerHTML = fragments.map(fragment => {
       const imageHTML = fragment.image
         ? `<img class="record-image" src="${fragment.image}" alt="fragment image">`
+        : "";
+
+      const videoHTML = fragment.videoLink
+        ? `<a class="video-link-card" href="${escapeHTML(fragment.videoLink)}" target="_blank" rel="noopener noreferrer">🎞 打开视频</a>`
         : "";
 
       const cardsHTML = fragment.replyCards && fragment.replyCards.length
@@ -664,6 +691,7 @@
         <div class="record-item">
           <div class="record-time">${escapeHTML(formatTime(fragment.createdAt))}</div>
           ${imageHTML}
+          ${videoHTML}
           <div class="record-text">${escapeHTML(fragment.text)}</div>
           ${getFragmentStatusHTML(fragment)}
           ${cardsHTML}
@@ -689,10 +717,6 @@
     saveState();
     renderFragments();
   }
-
-  // =====================
-  // 陪伴系统
-  // =====================
 
   function startCompanion(minutes, initiator) {
     const durationMs = minutes * 60 * 1000;
@@ -871,10 +895,6 @@
     endCompanion("lisa_left");
   }
 
-  // =====================
-  // 来信系统
-  // =====================
-
   function createLetter(force) {
     if (!force && !state.settings.dailyLetterEnabled) {
       return {
@@ -1044,10 +1064,6 @@
     }
   }
 
-  // =====================
-  // 设置 / 导入导出
-  // =====================
-
   function openSettings() {
     $("settingsModal").classList.remove("hidden");
 
@@ -1091,10 +1107,6 @@
     alert("导入完成。");
   }
 
-  // =====================
-  // 渲染总入口
-  // =====================
-
   function renderAll() {
     renderLisaText();
     $("typingName").textContent = getLisaName();
@@ -1105,10 +1117,6 @@
     renderCompanionInvite();
     renderLetters();
   }
-
-  // =====================
-  // 事件绑定
-  // =====================
 
   function bindEvents() {
     document.querySelectorAll(".tab-btn").forEach(btn => {
@@ -1191,6 +1199,12 @@
     $("exportFragmentsBtn").addEventListener("click", exportFragments);
     $("clearFragmentsBtn").addEventListener("click", clearFragments);
 
+    $("fragmentSearchInput").addEventListener("input", renderFragments);
+    $("clearFragmentSearchBtn").addEventListener("click", () => {
+      $("fragmentSearchInput").value = "";
+      renderFragments();
+    });
+
     $("settingsOpenBtn").addEventListener("click", openSettings);
     $("settingsCloseBtn").addEventListener("click", closeSettings);
     $("saveSettingsBtn").addEventListener("click", saveSettings);
@@ -1239,10 +1253,6 @@
       }
     });
   }
-
-  // =====================
-  // 启动
-  // =====================
 
   function init() {
     bindEvents();
