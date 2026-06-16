@@ -680,7 +680,16 @@
         : "";
 
       const videoHTML = fragment.videoLink
-        ? `<a class="video-link-card" href="${escapeHTML(fragment.videoLink)}" target="_blank" rel="noopener noreferrer">🎞 打开视频</a>`
+        ? `
+          <a class="video-link-card" href="${escapeHTML(fragment.videoLink)}" target="_blank" rel="noopener noreferrer">
+            <span class="video-link-icon">🎞</span>
+            <span class="video-link-content">
+              <span class="video-link-title">视频链接</span>
+              <span class="video-link-url">${escapeHTML(fragment.videoLink)}</span>
+            </span>
+            <span class="video-link-open">打开</span>
+          </a>
+        `
         : "";
 
       const cardsHTML = fragment.replyCards && fragment.replyCards.length
