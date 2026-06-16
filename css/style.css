@@ -133,29 +133,58 @@ button {
 
 .fragment-compose {
   display: grid;
-  gap: 16px;
-  padding: 18px;
+  gap: 18px;
+  padding: 22px;
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 250, 243, 0.62)),
+    rgba(255, 255, 255, 0.48);
+}
+
+.fragment-compose > label:first-child {
+  padding: 16px;
+  border: 1px solid rgba(122, 86, 55, 0.13);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.56);
 }
 
 .fragment-main-text {
-  min-height: 138px;
+  min-height: 170px;
+  border-radius: 20px;
+  background:
+    linear-gradient(rgba(122, 86, 55, 0.05) 1px, transparent 1px),
+    rgba(255, 255, 255, 0.82);
+  background-size: 100% 31px;
+  line-height: 31px;
 }
 
 .fragment-media-row {
   display: grid;
-  grid-template-columns: minmax(140px, 190px) 1fr;
-  gap: 14px;
-  align-items: start;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: stretch;
+  padding: 16px;
+  border: 1px dashed rgba(122, 86, 55, 0.25);
+  border-radius: 22px;
+  background: rgba(122, 86, 55, 0.055);
+}
+
+.fragment-media-row > div {
   padding: 14px;
-  border: 1px dashed var(--line);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.58);
 }
 
 .fragment-controls {
-  padding: 14px;
-  border-radius: 18px;
-  background: rgba(122, 86, 55, 0.055);
+  padding: 16px;
+  border: 1px solid rgba(122, 86, 55, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.fragment-controls .primary-btn {
+  margin-top: 4px;
+  min-width: 132px;
 }
 
 label {
@@ -253,10 +282,6 @@ select:focus {
 .file-label {
   width: fit-content;
   margin-top: 10px;
-}
-
-.video-link-label {
-  margin-top: 0;
 }
 
 .button-row {
@@ -426,9 +451,12 @@ select:focus {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 14px;
-  margin: 22px 0 12px;
-  padding-top: 4px;
+  gap: 18px;
+  margin: 28px 0 14px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(122, 86, 55, 0.12);
 }
 
 .fragment-board-head h3 {
@@ -436,75 +464,19 @@ select:focus {
 }
 
 .fragment-search-card {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   gap: 10px;
   align-items: center;
-  margin: 0 0 16px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.45);
+  margin: 0 0 18px;
+  padding: 14px;
+  border: 1px solid rgba(122, 86, 55, 0.14);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.54);
 }
 
 .fragment-search-card input {
   margin-top: 0;
-  flex: 1;
-}
-
-.video-link-card {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: fit-content;
-  max-width: 100%;
-  margin: 10px 0 6px;
-  padding: 11px 13px;
-  border-radius: 15px;
-  background: rgba(122, 86, 55, 0.11);
-  color: var(--accent);
-  text-decoration: none;
-  font-size: 13px;
-  border: 1px solid rgba(122, 86, 55, 0.16);
-}
-
-.video-link-card:hover {
-  opacity: 0.88;
-  transform: translateY(-1px);
-}
-
-.video-link-icon {
-  flex: 0 0 auto;
-  font-size: 18px;
-}
-
-.video-link-content {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.video-link-title {
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.video-link-url {
-  max-width: min(560px, 70vw);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.video-link-open {
-  flex: 0 0 auto;
-  margin-left: 4px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(122, 86, 55, 0.13);
-  color: var(--accent);
-  font-size: 12px;
 }
 
 .status-line {
@@ -765,13 +737,12 @@ hr {
   }
 
   .input-row,
-  .fragment-search-card,
   .fragment-board-head {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .fragment-media-row,
+  .fragment-search-card,
   .option-grid,
   .duration-grid {
     grid-template-columns: 1fr;
@@ -784,9 +755,5 @@ hr {
   .list-header {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .video-link-card {
-    width: 100%;
   }
 }
