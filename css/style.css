@@ -235,6 +235,10 @@ select:focus {
   margin-top: 12px;
 }
 
+.compact-row {
+  margin-top: 0;
+}
+
 .option-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -304,6 +308,7 @@ select:focus {
 
 .card-chip {
   display: inline-flex;
+  align-items: center;
   margin: 3px 4px 3px 0;
   padding: 7px 11px;
   border-radius: 999px;
@@ -311,6 +316,40 @@ select:focus {
   border: 1px solid rgba(122, 86, 55, 0.16);
   color: #513622;
   font-size: 13px;
+}
+
+.inline-x {
+  margin-left: 6px;
+  border: none;
+  background: rgba(122, 86, 55, 0.12);
+  color: var(--accent);
+  border-radius: 999px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.inline-x:hover {
+  background: rgba(164, 82, 69, 0.16);
+  color: var(--danger);
+}
+
+.card-category-block {
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.card-category-title {
+  margin-bottom: 8px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .typing-indicator {
@@ -377,9 +416,7 @@ select:focus {
 }
 
 .card-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: block;
 }
 
 .record-item {
@@ -454,6 +491,12 @@ select:focus {
   font-size: 34px;
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+.companion-total {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .checkbox-line {
@@ -551,5 +594,10 @@ hr {
 
   .bubble {
     max-width: 86%;
+  }
+
+  .list-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
