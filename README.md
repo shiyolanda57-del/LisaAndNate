@@ -1,2 +1,11 @@
-# mj-card-room
-被milk老师的字卡网站逻辑启发、以个性化功能和加强链接为主的自定义字卡网站。包含对话、碎片记录、mj陪伴和mj每日来信。
+# Lisa And Nate
+
+A small room behind the door.
+
+This is a private card-based companion site for Lisa and Nate.  
+It keeps conversations, fragments, companionship time, and letters in one place.
+
+She may be here waiting.  
+Or I may arrive first and wait for her.
+
+All personal data is saved locally in the browser.
