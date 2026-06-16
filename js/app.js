@@ -120,17 +120,6 @@
     });
   }
 
-  function isSafeVideoLink(url) {
-    if (!url) return true;
-
-    try {
-      const parsed = new URL(url);
-      return parsed.protocol === "http:" || parsed.protocol === "https:";
-    } catch (error) {
-      return false;
-    }
-  }
-
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -565,18 +554,12 @@
 
   function saveFragment() {
     const text = $("fragmentText").value.trim();
-    const videoLink = $("fragmentVideoLink").value.trim();
     const replyMode = $("fragmentReplyMode").value;
     const feedbackMode = $("fragmentFeedbackMode").value;
     const status = $("fragmentStatus");
 
-    if (videoLink && !isSafeVideoLink(videoLink)) {
-      alert("视频链接需要以 http:// 或 https:// 开头。");
-      return;
-    }
-
-    if (!text && !selectedFragmentImage && !videoLink) {
-      alert("先写点东西，上传一张图片，或者粘贴一个视频链接。");
+    if (!text && !selectedFragmentImage) {
+      alert("先写点东西，或者上传一张图片。");
       return;
     }
 
@@ -586,7 +569,6 @@
       id: makeId("frag"),
       text,
       image: selectedFragmentImage,
-      videoLink,
       createdAt: now(),
       replyMode,
       feedbackMode,
@@ -619,7 +601,6 @@
 
     $("fragmentText").value = "";
     $("fragmentImage").value = "";
-    $("fragmentVideoLink").value = "";
     $("fragmentPreview").innerHTML = "";
     selectedFragmentImage = "";
 
@@ -648,7 +629,6 @@
     return [
       formatTime(fragment.createdAt),
       fragment.text || "",
-      fragment.videoLink || "",
       ...(fragment.replyCards || []),
       fragment.replyStatus || ""
     ].join(" ").toLowerCase();
@@ -679,19 +659,6 @@
         ? `<img class="record-image" src="${fragment.image}" alt="fragment image">`
         : "";
 
-      const videoHTML = fragment.videoLink
-        ? `
-          <a class="video-link-card" href="${escapeHTML(fragment.videoLink)}" target="_blank" rel="noopener noreferrer">
-            <span class="video-link-icon">🎞</span>
-            <span class="video-link-content">
-              <span class="video-link-title">视频链接</span>
-              <span class="video-link-url">${escapeHTML(fragment.videoLink)}</span>
-            </span>
-            <span class="video-link-open">打开</span>
-          </a>
-        `
-        : "";
-
       const cardsHTML = fragment.replyCards && fragment.replyCards.length
         ? `<div style="margin-top:8px;">${fragment.replyCards.map(card => `<span class="card-chip">${escapeHTML(card)}</span>`).join("")}</div>`
         : "";
@@ -700,7 +667,6 @@
         <div class="record-item">
           <div class="record-time">${escapeHTML(formatTime(fragment.createdAt))}</div>
           ${imageHTML}
-          ${videoHTML}
           <div class="record-text">${escapeHTML(fragment.text)}</div>
           ${getFragmentStatusHTML(fragment)}
           ${cardsHTML}
