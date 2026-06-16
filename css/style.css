@@ -475,6 +475,21 @@ select:focus {
   gap: 10px;
 }
 
+.companion-invite {
+  margin-top: 14px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid rgba(122, 86, 55, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--text);
+}
+
+#companionInviteText {
+  line-height: 1.7;
+  font-size: 14px;
+}
+
 .companion-view {
   margin: 16px 0;
   padding: 24px;
@@ -509,6 +524,56 @@ select:focus {
 .checkbox-line input {
   width: auto;
   margin: 0;
+}
+
+.letter-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.letter-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.letter-body {
+  margin-top: 10px;
+  line-height: 1.9;
+}
+
+.letter-comment-box {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
+.letter-comment-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.letter-comment {
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: rgba(122, 86, 55, 0.08);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.letter-comment-time {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.letter-comment-save {
+  margin-top: 8px;
 }
 
 .modal {
