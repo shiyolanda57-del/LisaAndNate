@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MJ Card Room</title>
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <div class="app-shell">
+
+    <!-- 顶部 -->
+    <header class="app-header">
+      <div>
+        <h1>MJ Card Room</h1>
+        <p>字卡回应 · 碎片记录 · 陪伴房间 · MJ 来信</p>
+      </div>
+
+      <button id="settingsOpenBtn" class="small-btn" type="button">
+        设置
+      </button>
+    </header>
+
+    <!-- 主导航 -->
+    <nav class="main-tabs">
+      <button class="tab-btn active" data-tab="chat" type="button">对话</button>
+      <button class="tab-btn" data-tab="fragments" type="button">碎片</button>
+      <button class="tab-btn" data-tab="cards" type="button">字卡库</button>
+      <button class="tab-btn" data-tab="companion" type="button">陪伴</button>
+      <button class="tab-btn" data-tab="letters" type="button">来信</button>
+    </nav>
+
+    <!-- 对话 -->
+    <section id="tab-chat" class="tab-panel active">
+      <div class="panel-title">
+        <h2>对话</h2>
+        <p>你发消息，MJ 从字卡库随机组合 1-4 张字卡回复。</p>
+      </div>
+
+      <div id="chatList" class="chat-list"></div>
+
+      <div id="typingIndicator" class="typing-indicator hidden">
+        <span id="typingName">MJ</span> 正在输入
+        <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+      </div>
+
+      <div class="input-row">
+        <textarea id="chatInput" placeholder="写点什么……" rows="2"></textarea>
+        <button id="sendChatBtn" class="primary-btn" type="button">发送</button>
+      </div>
+    </section>
+
+    <!-- 碎片 -->
+    <section id="tab-fragments" class="tab-panel">
+      <div class="panel-title">
+        <h2>碎片记录</h2>
+        <p>保存日常、图片和碎碎念。MJ 可以即时回应、延迟回应，也可以不回应。</p>
+      </div>
+
+      <div class="card-block">
+        <textarea id="fragmentText" placeholder="写一点碎片……" rows="4"></textarea>
+
+        <label class="file-label">
+          上传图片
+          <input id="fragmentImage" type="file" accept="image/*" hidden />
+        </label>
+
+        <div id="fragmentPreview" class="image-preview"></div>
+
+        <div class="option-grid">
+          <label>
+            MJ 要不要回应
+            <select id="fragmentReplyMode">
+              <option value="auto">不干预：50% 概率回应</option>
+              <option value="must">我想要 MJ 回应</option>
+              <option value="silent">不需要回应，只保存</option>
+            </select>
+          </label>
+
+          <label>
+            反馈时间
+            <select id="fragmentFeedbackMode">
+              <option value="instant">即时反馈</option>
+              <option value="delayed">稍后反馈：6h-24h</option>
+            </select>
+          </label>
+        </div>
+
+        <button id="saveFragmentBtn" class="primary-btn" type="button">
+          保存碎片
+        </button>
+
+        <div id="fragmentStatus" class="status-line"></div>
+      </div>
+
+      <div class="list-header">
+        <h3>碎片板</h3>
+        <button id="clearFragmentsBtn" class="danger-btn" type="button">清空碎片</button>
+      </div>
+
+      <div id="fragmentList" class="record-list"></div>
+    </section>
+
+    <!-- 字卡库 -->
+    <section id="tab-cards" class="tab-panel">
+      <div class="panel-title">
+        <h2>字卡库</h2>
+        <p>代码里不预设固定字卡。你在这里自己输入、导入、导出。</p>
+      </div>
+
+      <div class="card-block">
+        <label>
+          添加字卡
+          <textarea id="cardInput" placeholder="每行一张字卡。例如：&#10;我看见了。&#10;别删。&#10;过来。" rows="6"></textarea>
+        </label>
+
+        <div class="button-row">
+          <button id="addCardsBtn" class="primary-btn" type="button">添加到字卡库</button>
+          <button id="clearCardsBtn" class="danger-btn" type="button">清空字卡库</button>
+        </div>
+      </div>
+
+      <div class="card-block">
+        <h3>兼容原网站格式</h3>
+        <p class="hint">
+          可导入 / 导出包含 customReplies、customReplyGroups、disabledReplyItems 的 JSON。
+        </p>
+
+        <div class="button-row">
+          <label class="file-label">
+            导入 JSON
+            <input id="importCardsFile" type="file" accept=".json,application/json" hidden />
+          </label>
+          <button id="exportCardsBtn" class="secondary-btn" type="button">导出字卡 JSON</button>
+        </div>
+      </div>
+
+      <div class="list-header">
+        <h3>当前字卡</h3>
+        <span id="cardCount" class="count-text">0 张</span>
+      </div>
+
+      <div id="cardList" class="card-list"></div>
+    </section>
+
+    <!-- 陪伴：第一版先放界面骨架，JS 下一阶段实现 -->
+    <section id="tab-companion" class="tab-panel">
+      <div class="panel-title">
+        <h2>陪伴</h2>
+        <p>选择单次陪伴时长。之后会加 MJ 主动发起和主动结束。</p>
+      </div>
+
+      <div class="card-block">
+        <div class="duration-grid">
+          <button class="duration-btn" data-duration="30" type="button">半小时</button>
+          <button class="duration-btn" data-duration="60" type="button">1 小时</button>
+          <button class="duration-btn" data-duration="120" type="button">2 小时</button>
+          <button class="duration-btn" data-duration="480" type="button">8 小时</button>
+        </div>
+
+        <div id="companionView" class="companion-view">
+          <div id="companionStatus">还没有开始陪伴。</div>
+          <div id="companionTimer" class="companion-timer">00:00:00</div>
+        </div>
+
+        <button id="endCompanionBtn" class="danger-btn" type="button">结束陪伴</button>
+      </div>
+    </section>
+
+    <!-- 来信：第一版先放界面骨架，JS 下一阶段实现 -->
+    <section id="tab-letters" class="tab-panel">
+      <div class="panel-title">
+        <h2>MJ 来信</h2>
+        <p>开启后，每 24 小时检查一次，生成一封由 1-12 张字卡组成的信。</p>
+      </div>
+
+      <div class="card-block">
+        <label class="checkbox-line">
+          <input id="dailyLetterEnabled" type="checkbox" />
+          开启 MJ 每日来信
+        </label>
+
+        <button id="checkLetterBtn" class="primary-btn" type="button">
+          检查今日来信
+        </button>
+      </div>
+
+      <div id="letterList" class="record-list"></div>
+    </section>
+
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2>设置</h2>
+        <button id="settingsCloseBtn" class="small-btn" type="button">关闭</button>
+      </div>
+
+      <label>
+        MJ 名字
+        <input id="mjNameInput" type="text" placeholder="例如：Lisa" />
+      </label>
+
+      <div class="option-grid">
+        <label>
+          最短回复等待 ms
+          <input id="replyDelayMinInput" type="number" min="0" step="100" />
+        </label>
+
+        <label>
+          最长回复等待 ms
+          <input id="replyDelayMaxInput" type="number" min="0" step="100" />
+        </label>
+      </div>
+
+      <button id="saveSettingsBtn" class="primary-btn" type="button">
+        保存设置
+      </button>
+
+      <hr />
+
+      <div class="button-row">
+        <button id="exportAllBtn" class="secondary-btn" type="button">导出全部数据</button>
+
+        <label class="file-label">
+          导入全部数据
+          <input id="importAllFile" type="file" accept=".json,application/json" hidden />
+        </label>
+      </div>
+
+      <p class="hint">
+        第一版全部数据保存在当前浏览器。换设备、清缓存可能丢失，建议定期导出 JSON。
+      </p>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
