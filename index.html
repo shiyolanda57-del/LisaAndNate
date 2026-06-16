@@ -11,19 +11,15 @@
 <body>
   <div class="app-shell">
 
-    <!-- 顶部 -->
     <header class="app-header">
       <div>
         <h1>Lisa Card Room</h1>
         <p data-lisa-text="字卡回应 · 碎片记录 · 陪伴房间 · {name} 来信">字卡回应 · 碎片记录 · 陪伴房间 · Lisa 来信</p>
       </div>
 
-      <button id="settingsOpenBtn" class="small-btn" type="button">
-        设置
-      </button>
+      <button id="settingsOpenBtn" class="small-btn" type="button">设置</button>
     </header>
 
-    <!-- 主导航 -->
     <nav class="main-tabs">
       <button class="tab-btn active" data-tab="chat" type="button">对话</button>
       <button class="tab-btn" data-tab="fragments" type="button">碎片</button>
@@ -32,7 +28,6 @@
       <button class="tab-btn" data-tab="letters" type="button">来信</button>
     </nav>
 
-    <!-- 对话 -->
     <section id="tab-chat" class="tab-panel active">
       <div class="panel-title">
         <h2>对话</h2>
@@ -52,11 +47,10 @@
       </div>
     </section>
 
-    <!-- 碎片 -->
     <section id="tab-fragments" class="tab-panel">
       <div class="panel-title">
         <h2>碎片记录</h2>
-        <p data-lisa-text="保存日常、图片和碎碎念。{name} 可以即时回应、延迟回应，也可以不回应。">保存日常、图片和碎碎念。Lisa 可以即时回应、延迟回应，也可以不回应。</p>
+        <p data-lisa-text="保存日常、图片、视频链接和碎碎念。{name} 可以即时回应、延迟回应，也可以不回应。">保存日常、图片、视频链接和碎碎念。Lisa 可以即时回应、延迟回应，也可以不回应。</p>
       </div>
 
       <div class="card-block">
@@ -68,6 +62,11 @@
         </label>
 
         <div id="fragmentPreview" class="image-preview"></div>
+
+        <label class="video-link-label">
+          视频链接，可选
+          <input id="fragmentVideoLink" type="text" placeholder="粘贴 YouTube / B站 / 网盘 / 公开视频链接……" />
+        </label>
 
         <div class="option-grid">
           <label>
@@ -88,9 +87,7 @@
           </label>
         </div>
 
-        <button id="saveFragmentBtn" class="primary-btn" type="button">
-          保存碎片
-        </button>
+        <button id="saveFragmentBtn" class="primary-btn" type="button">保存碎片</button>
 
         <div id="fragmentStatus" class="status-line"></div>
       </div>
@@ -103,10 +100,14 @@
         </div>
       </div>
 
+      <div class="fragment-search-row">
+        <input id="fragmentSearchInput" type="text" placeholder="搜索日期 / 关键词 / 字卡 / 视频链接……" />
+        <button id="clearFragmentSearchBtn" class="secondary-btn" type="button">清空搜索</button>
+      </div>
+
       <div id="fragmentList" class="record-list"></div>
     </section>
 
-    <!-- 字卡库 -->
     <section id="tab-cards" class="tab-panel">
       <div class="panel-title">
         <h2>字卡库</h2>
@@ -132,9 +133,7 @@
 
       <div class="card-block">
         <h3>兼容原网站格式</h3>
-        <p class="hint">
-          可导入 / 导出包含 customReplies、customReplyGroups、disabledReplyItems 的 JSON。
-        </p>
+        <p class="hint">可导入 / 导出包含 customReplies、customReplyGroups、disabledReplyItems 的 JSON。</p>
 
         <div class="button-row">
           <label class="file-label">
@@ -153,7 +152,6 @@
       <div id="cardList" class="card-list"></div>
     </section>
 
-    <!-- 陪伴 -->
     <section id="tab-companion" class="tab-panel">
       <div class="panel-title">
         <h2>陪伴</h2>
@@ -188,7 +186,6 @@
       </div>
     </section>
 
-    <!-- 来信 -->
     <section id="tab-letters" class="tab-panel">
       <div class="panel-title">
         <h2 data-lisa-text="{name} 来信">Lisa 来信</h2>
@@ -202,18 +199,10 @@
         </label>
 
         <div class="button-row">
-          <button id="checkLetterBtn" class="primary-btn" type="button">
-            检查今日来信
-          </button>
-          <button id="forceLetterBtn" class="secondary-btn" type="button">
-            手动生成一封测试信
-          </button>
-          <button id="exportLettersBtn" class="secondary-btn" type="button">
-            导出来信
-          </button>
-          <button id="clearLettersBtn" class="danger-btn" type="button">
-            清空来信
-          </button>
+          <button id="checkLetterBtn" class="primary-btn" type="button">检查今日来信</button>
+          <button id="forceLetterBtn" class="secondary-btn" type="button">手动生成一封测试信</button>
+          <button id="exportLettersBtn" class="secondary-btn" type="button">导出来信</button>
+          <button id="clearLettersBtn" class="danger-btn" type="button">清空来信</button>
         </div>
 
         <div id="letterStatus" class="status-line"></div>
@@ -224,7 +213,6 @@
 
   </div>
 
-  <!-- 设置弹窗 -->
   <div id="settingsModal" class="modal hidden">
     <div class="modal-panel">
       <div class="modal-header">
@@ -249,9 +237,7 @@
         </label>
       </div>
 
-      <button id="saveSettingsBtn" class="primary-btn" type="button">
-        保存设置
-      </button>
+      <button id="saveSettingsBtn" class="primary-btn" type="button">保存设置</button>
 
       <hr />
 
@@ -264,9 +250,7 @@
         </label>
       </div>
 
-      <p class="hint">
-        第一版全部数据保存在当前浏览器。换设备、清缓存可能丢失，建议定期导出 JSON。
-      </p>
+      <p class="hint">第一版全部数据保存在当前浏览器。换设备、清缓存可能丢失，建议定期导出 JSON。</p>
     </div>
   </div>
 
