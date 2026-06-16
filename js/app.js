@@ -2,7 +2,13 @@
 // 原生 JS / 本地保存 / 不预设固定字卡内容
 
 (function () {
-  const STORAGE_KEY = "mj_card_room_state_v3";
+  const STORAGE_KEY = "mj_card_room_state";
+
+  const LEGACY_STORAGE_KEYS = [
+    "mj_card_room_state_v1",
+    "mj_card_room_state_v2",
+    "mj_card_room_state_v3"
+  ];
 
   const SIX_HOURS = 6 * 60 * 60 * 1000;
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
@@ -116,11 +122,27 @@
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return cloneDefaultState();
 
-      const saved = JSON.parse(raw);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        return mergeState(defaultState, saved);
+      }
 
-      return mergeState(defaultState, saved);
+      // 兼容旧版本存档：v1 / v2 / v3
+      for (const key of LEGACY_STORAGE_KEYS) {
+        const legacyRaw = localStorage.getItem(key);
+
+        if (legacyRaw) {
+          const legacySaved = JSON.parse(legacyRaw);
+          const migratedState = mergeState(defaultState, legacySaved);
+
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(migratedState));
+
+          return migratedState;
+        }
+      }
+
+      return cloneDefaultState();
     } catch (error) {
       console.warn("读取本地数据失败：", error);
       return cloneDefaultState();
