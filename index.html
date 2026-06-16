@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MJ Card Room</title>
+  <title>Lisa Card Room</title>
 
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -14,8 +14,8 @@
     <!-- 顶部 -->
     <header class="app-header">
       <div>
-        <h1>MJ Card Room</h1>
-        <p data-mj-text="字卡回应 · 碎片记录 · 陪伴房间 · {name} 来信">字卡回应 · 碎片记录 · 陪伴房间 · MJ 来信</p>
+        <h1>Lisa Card Room</h1>
+        <p data-lisa-text="字卡回应 · 碎片记录 · 陪伴房间 · {name} 来信">字卡回应 · 碎片记录 · 陪伴房间 · Lisa 来信</p>
       </div>
 
       <button id="settingsOpenBtn" class="small-btn" type="button">
@@ -36,13 +36,13 @@
     <section id="tab-chat" class="tab-panel active">
       <div class="panel-title">
         <h2>对话</h2>
-        <p data-mj-text="你发消息，{name} 从字卡库随机组合 1-4 张字卡回复。">你发消息，MJ 从字卡库随机组合 1-4 张字卡回复。</p>
+        <p data-lisa-text="你发消息，{name} 从字卡库随机组合 1-4 张字卡回复。">你发消息，Lisa 从字卡库随机组合 1-4 张字卡回复。</p>
       </div>
 
       <div id="chatList" class="chat-list"></div>
 
       <div id="typingIndicator" class="typing-indicator hidden">
-        <span id="typingName">MJ</span> 正在输入
+        <span id="typingName">Lisa</span> 正在输入
         <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
       </div>
 
@@ -56,7 +56,7 @@
     <section id="tab-fragments" class="tab-panel">
       <div class="panel-title">
         <h2>碎片记录</h2>
-        <p data-mj-text="保存日常、图片和碎碎念。{name} 可以即时回应、延迟回应，也可以不回应。">保存日常、图片和碎碎念。MJ 可以即时回应、延迟回应，也可以不回应。</p>
+        <p data-lisa-text="保存日常、图片和碎碎念。{name} 可以即时回应、延迟回应，也可以不回应。">保存日常、图片和碎碎念。Lisa 可以即时回应、延迟回应，也可以不回应。</p>
       </div>
 
       <div class="card-block">
@@ -71,10 +71,10 @@
 
         <div class="option-grid">
           <label>
-            <span data-mj-text="{name} 要不要回应">MJ 要不要回应</span>
+            <span data-lisa-text="{name} 要不要回应">Lisa 要不要回应</span>
             <select id="fragmentReplyMode">
               <option value="auto">不干预：50% 概率回应</option>
-              <option value="must" data-mj-text="我想要 {name} 回应">我想要 MJ 回应</option>
+              <option value="must" data-lisa-text="我想要 {name} 回应">我想要 Lisa 回应</option>
               <option value="silent">不需要回应，只保存</option>
             </select>
           </label>
@@ -157,7 +157,7 @@
     <section id="tab-companion" class="tab-panel">
       <div class="panel-title">
         <h2>陪伴</h2>
-        <p data-mj-text="选择单次陪伴时长。{name} 也可能主动发起或主动结束。">选择单次陪伴时长。MJ 也可能主动发起或主动结束。</p>
+        <p data-lisa-text="选择单次陪伴时长。{name} 也可能主动发起或主动结束。">选择单次陪伴时长。Lisa 也可能主动发起或主动结束。</p>
       </div>
 
       <div class="card-block">
@@ -169,7 +169,7 @@
         </div>
 
         <div id="companionInvite" class="companion-invite hidden">
-          <div id="companionInviteText">MJ 想陪你一会儿。</div>
+          <div id="companionInviteText">Lisa 想陪你一会儿。</div>
           <div class="button-row">
             <button id="acceptCompanionInviteBtn" class="primary-btn" type="button">接受</button>
             <button id="declineCompanionInviteBtn" class="secondary-btn" type="button">这次不要</button>
@@ -191,14 +191,14 @@
     <!-- 来信 -->
     <section id="tab-letters" class="tab-panel">
       <div class="panel-title">
-        <h2 data-mj-text="{name} 来信">MJ 来信</h2>
+        <h2 data-lisa-text="{name} 来信">Lisa 来信</h2>
         <p>开启后，每 24 小时检查一次，生成一封由 1-12 张字卡组成的信。你可以在信下面评论。</p>
       </div>
 
       <div class="card-block">
         <label class="checkbox-line">
           <input id="dailyLetterEnabled" type="checkbox" />
-          <span data-mj-text="开启 {name} 每日来信">开启 MJ 每日来信</span>
+          <span data-lisa-text="开启 {name} 每日来信">开启 Lisa 每日来信</span>
         </label>
 
         <div class="button-row">
@@ -234,7 +234,7 @@
 
       <label>
         对方名字
-        <input id="mjNameInput" type="text" placeholder="例如：Lisa" />
+        <input id="lisaNameInput" type="text" placeholder="例如：Lisa" />
       </label>
 
       <div class="option-grid">
