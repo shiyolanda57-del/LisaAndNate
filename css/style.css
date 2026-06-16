@@ -228,6 +228,10 @@ select:focus {
   margin-top: 10px;
 }
 
+.video-link-label {
+  margin-top: 12px;
+}
+
 .button-row {
   display: flex;
   flex-wrap: wrap;
@@ -389,6 +393,37 @@ select:focus {
   max-width: 100%;
   margin-top: 10px;
   border-radius: 16px;
+}
+
+.fragment-search-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 14px;
+}
+
+.fragment-search-row input {
+  margin-top: 0;
+  flex: 1;
+}
+
+.video-link-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 13px;
+  border-radius: 14px;
+  background: rgba(122, 86, 55, 0.11);
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 13px;
+  border: 1px solid rgba(122, 86, 55, 0.15);
+}
+
+.video-link-card:hover {
+  opacity: 0.86;
+  transform: translateY(-1px);
 }
 
 .status-line {
@@ -647,7 +682,8 @@ hr {
     border-radius: 20px;
   }
 
-  .input-row {
+  .input-row,
+  .fragment-search-row {
     flex-direction: column;
     align-items: stretch;
   }
