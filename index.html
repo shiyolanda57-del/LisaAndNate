@@ -53,54 +53,66 @@
         <p data-lisa-text="保存日常、图片、视频链接和碎碎念。{name} 可以即时回应、延迟回应，也可以不回应。">保存日常、图片、视频链接和碎碎念。Lisa 可以即时回应、延迟回应，也可以不回应。</p>
       </div>
 
-      <div class="card-block">
-        <textarea id="fragmentText" placeholder="写一点碎片……" rows="4"></textarea>
-
-        <label class="file-label">
-          上传图片
-          <input id="fragmentImage" type="file" accept="image/*" hidden />
+      <div class="card-block fragment-compose">
+        <label>
+          写碎片
+          <textarea id="fragmentText" class="fragment-main-text" placeholder="写一点碎片……" rows="5"></textarea>
         </label>
 
-        <div id="fragmentPreview" class="image-preview"></div>
+        <div class="fragment-media-row">
+          <div>
+            <label class="file-label">
+              上传图片
+              <input id="fragmentImage" type="file" accept="image/*" hidden />
+            </label>
+            <div id="fragmentPreview" class="image-preview"></div>
+          </div>
 
-        <label class="video-link-label">
-          视频链接，可选
-          <input id="fragmentVideoLink" type="text" placeholder="粘贴 YouTube / B站 / 网盘 / 公开视频链接……" />
-        </label>
-
-        <div class="option-grid">
-          <label>
-            <span data-lisa-text="{name} 要不要回应">Lisa 要不要回应</span>
-            <select id="fragmentReplyMode">
-              <option value="auto">不干预：50% 概率回应</option>
-              <option value="must" data-lisa-text="我想要 {name} 回应">我想要 Lisa 回应</option>
-              <option value="silent">不需要回应，只保存</option>
-            </select>
-          </label>
-
-          <label>
-            反馈时间
-            <select id="fragmentFeedbackMode">
-              <option value="instant">即时反馈</option>
-              <option value="delayed">稍后反馈：6h-24h</option>
-            </select>
+          <label class="video-link-label">
+            视频链接，可选
+            <input id="fragmentVideoLink" type="text" placeholder="粘贴 YouTube / B站 / 网盘 / 公开视频链接……" />
           </label>
         </div>
 
-        <button id="saveFragmentBtn" class="primary-btn" type="button">保存碎片</button>
+        <div class="fragment-controls">
+          <div class="option-grid">
+            <label>
+              <span data-lisa-text="{name} 要不要回应">Lisa 要不要回应</span>
+              <select id="fragmentReplyMode">
+                <option value="auto">不干预：50% 概率回应</option>
+                <option value="must" data-lisa-text="我想要 {name} 回应">我想要 Lisa 回应</option>
+                <option value="silent">不需要回应，只保存</option>
+              </select>
+            </label>
+
+            <label>
+              反馈时间
+              <select id="fragmentFeedbackMode">
+                <option value="instant">即时反馈</option>
+                <option value="delayed">稍后反馈：6h-24h</option>
+              </select>
+            </label>
+          </div>
+
+          <button id="saveFragmentBtn" class="primary-btn" type="button">保存碎片</button>
+        </div>
 
         <div id="fragmentStatus" class="status-line"></div>
       </div>
 
-      <div class="list-header">
-        <h3>碎片板</h3>
+      <div class="fragment-board-head">
+        <div>
+          <h3>碎片板</h3>
+          <p class="hint">可以搜索日期、关键词、视频链接，或 Lisa 回应过的字卡。</p>
+        </div>
+
         <div class="button-row compact-row">
           <button id="exportFragmentsBtn" class="secondary-btn" type="button">导出碎片</button>
           <button id="clearFragmentsBtn" class="danger-btn" type="button">清空碎片</button>
         </div>
       </div>
 
-      <div class="fragment-search-row">
+      <div class="fragment-search-card">
         <input id="fragmentSearchInput" type="text" placeholder="搜索日期 / 关键词 / 字卡 / 视频链接……" />
         <button id="clearFragmentSearchBtn" class="secondary-btn" type="button">清空搜索</button>
       </div>
