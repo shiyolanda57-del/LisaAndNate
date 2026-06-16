@@ -1,4 +1,5 @@
 // Lisa Card Room
+// VERSION: companion-quarter-check-2026-06-17
 // 原生 JS / 本地保存 / 不预设固定字卡内容
 
 (function () {
@@ -23,9 +24,13 @@
       replyDelayMax: 2200,
       dailyLetterEnabled: false,
       lastLetterAt: null,
+
       companionInviteEnabled: true,
       companionInviteChance: 0.18,
-      companionLeaveChance: 0.04
+
+      companionAcceptChance: 0.75,
+      companionBusyChance: 0.15,
+      companionLeaveChance: 0.18
     },
     cardSystem: {
       customReplies: [],
@@ -693,22 +698,62 @@
     renderFragments();
   }
 
+  // =====================
+  // 陪伴系统
+  // =====================
+
+  function requestCompanion(minutes) {
+    if (companionEndAt) {
+      $("companionStatus").textContent = "已经在陪伴中了。";
+      return;
+    }
+
+    const name = getLisaName();
+    const acceptChance = Number(state.settings.companionAcceptChance) || 0.75;
+    const busyChance = Number(state.settings.companionBusyChance) || 0.15;
+    const roll = Math.random();
+
+    if (roll < acceptChance) {
+      startCompanion(minutes, "me");
+      return;
+    }
+
+    if (roll < acceptChance + busyChance) {
+      $("companionStatus").textContent = `${name} 现在有事，暂时无法查看。`;
+      return;
+    }
+
+    $("companionStatus").textContent = `${name} 这次没有答应陪伴。`;
+  }
+
   function startCompanion(minutes, initiator) {
+    const startAt = now();
     const durationMs = minutes * 60 * 1000;
-    companionEndAt = now() + durationMs;
+    const plannedEndAt = startAt + durationMs;
+
+    companionEndAt = plannedEndAt;
 
     state.companionSessions.unshift({
       id: makeId("comp"),
-      startedAt: now(),
-      plannedEndAt: companionEndAt,
+      startedAt: startAt,
+      plannedEndAt,
       durationMinutes: minutes,
       status: "active",
-      initiator: initiator || "me"
+      initiator: initiator || "me",
+      leaveChecks: [
+        { at: startAt + durationMs * 0.25, done: false },
+        { at: startAt + durationMs * 0.5, done: false },
+        { at: startAt + durationMs * 0.75, done: false }
+      ]
     });
 
     saveState();
 
-    $("companionStatus").textContent = `${getLisaName()} 正在陪你 ${formatDurationLabel(minutes)}。`;
+    if (initiator === "lisa") {
+      $("companionStatus").textContent = `${getLisaName()} 开始陪你 ${formatDurationLabel(minutes)}。`;
+    } else {
+      $("companionStatus").textContent = `${getLisaName()} 答应了，正在陪你 ${formatDurationLabel(minutes)}。`;
+    }
 
     if (companionTimer) clearInterval(companionTimer);
 
@@ -865,10 +910,26 @@
 
   function maybeLisaLeavesCompanion() {
     if (!companionEndAt) return;
+
+    const active = state.companionSessions.find(s => s.status === "active");
+    if (!active || !Array.isArray(active.leaveChecks)) return;
+
+    const currentTime = now();
+    const check = active.leaveChecks.find(item => !item.done && currentTime >= item.at);
+
+    if (!check) return;
+
+    check.done = true;
+    saveState();
+
     if (Math.random() > state.settings.companionLeaveChance) return;
 
     endCompanion("lisa_left");
   }
+
+  // =====================
+  // 来信系统
+  // =====================
 
   function createLetter(force) {
     if (!force && !state.settings.dailyLetterEnabled) {
@@ -1039,6 +1100,10 @@
     }
   }
 
+  // =====================
+  // 设置 / 导入导出
+  // =====================
+
   function openSettings() {
     $("settingsModal").classList.remove("hidden");
 
@@ -1203,7 +1268,7 @@
     document.querySelectorAll(".duration-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         const minutes = Number(btn.dataset.duration);
-        startCompanion(minutes, "me");
+        requestCompanion(minutes);
       });
     });
 
@@ -1243,7 +1308,7 @@
 
     setInterval(() => {
       maybeCreateCompanionInvite();
-    }, 5 * 60 * 1000);
+    }, 30 * 60 * 1000);
   }
 
   init();
