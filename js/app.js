@@ -1,8 +1,8 @@
-// MJ Card Room - base version
+// MJ Card Room
 // 原生 JS / 本地保存 / 不预设固定字卡内容
 
 (function () {
-  const STORAGE_KEY = "mj_card_room_state_v1";
+  const STORAGE_KEY = "mj_card_room_state_v2";
 
   const SIX_HOURS = 6 * 60 * 60 * 1000;
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
@@ -29,10 +29,6 @@
   };
 
   let state = loadState();
-
-  // =====================
-  // 基础工具
-  // =====================
 
   function $(id) {
     return document.getElementById(id);
@@ -72,6 +68,10 @@
     return String(text || "").trim();
   }
 
+  function cloneDefaultState() {
+    return JSON.parse(JSON.stringify(defaultState));
+  }
+
   function downloadText(filename, text) {
     const blob = new Blob([text], { type: "application/json;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -106,21 +106,17 @@
     });
   }
 
-  // =====================
-  // 数据保存
-  // =====================
-
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return structuredClone(defaultState);
+      if (!raw) return cloneDefaultState();
 
       const saved = JSON.parse(raw);
 
       return mergeState(defaultState, saved);
     } catch (error) {
       console.warn("读取本地数据失败：", error);
-      return structuredClone(defaultState);
+      return cloneDefaultState();
     }
   }
 
@@ -159,13 +155,34 @@
     return new Set(arr.map(normalizeCardText));
   }
 
+  function getDisabledGroupItemsSet() {
+    const result = new Set();
+
+    const groups = Array.isArray(state.cardSystem.customReplyGroups)
+      ? state.cardSystem.customReplyGroups
+      : [];
+
+    groups.forEach(group => {
+      if (!group || !group.disabled) return;
+      if (!Array.isArray(group.items)) return;
+
+      group.items.forEach(item => {
+        result.add(normalizeCardText(item));
+      });
+    });
+
+    return result;
+  }
+
   function getAvailableCards() {
     const disabled = getDisabledSet();
+    const disabledByGroup = getDisabledGroupItemsSet();
 
     return (state.cardSystem.customReplies || [])
       .map(normalizeCardText)
       .filter(Boolean)
-      .filter(card => !disabled.has(card));
+      .filter(card => !disabled.has(card))
+      .filter(card => !disabledByGroup.has(card));
   }
 
   function drawCards(min, max) {
@@ -179,7 +196,7 @@
     return shuffled.slice(0, count);
   }
 
-  function addCardsFromText(text) {
+  function addCardsFromText(text, categoryName) {
     const lines = String(text || "")
       .split(/\r?\n/)
       .map(normalizeCardText)
@@ -187,7 +204,29 @@
 
     if (!lines.length) return 0;
 
+    const finalCategoryName = normalizeCardText(categoryName) || "未分类";
+
+    if (!Array.isArray(state.cardSystem.customReplyGroups)) {
+      state.cardSystem.customReplyGroups = [];
+    }
+
+    let group = state.cardSystem.customReplyGroups.find(g => g.name === finalCategoryName);
+
+    if (!group) {
+      group = {
+        name: finalCategoryName,
+        items: [],
+        disabled: false
+      };
+      state.cardSystem.customReplyGroups.push(group);
+    }
+
+    if (!Array.isArray(group.items)) {
+      group.items = [];
+    }
+
     const existing = new Set((state.cardSystem.customReplies || []).map(normalizeCardText));
+    const groupExisting = new Set(group.items.map(normalizeCardText));
 
     let added = 0;
 
@@ -196,6 +235,11 @@
         state.cardSystem.customReplies.push(card);
         existing.add(card);
         added += 1;
+      }
+
+      if (!groupExisting.has(card)) {
+        group.items.push(card);
+        groupExisting.add(card);
       }
     });
 
@@ -206,18 +250,6 @@
   }
 
   function importCardJSON(data) {
-    // 尽量兼容原网站格式：
-    // {
-    //   customReplies: [],
-    //   customReplyGroups: [],
-    //   disabledReplyItems: []
-    // }
-    //
-    // 也兼容新站完整备份：
-    // {
-    //   cardSystem: { customReplies, customReplyGroups, disabledReplyItems }
-    // }
-
     let source = data;
 
     if (data && data.cardSystem) {
@@ -263,7 +295,9 @@
     const cardCount = $("cardCount");
 
     const cards = state.cardSystem.customReplies || [];
-    const disabled = getDisabledSet();
+    const groups = Array.isArray(state.cardSystem.customReplyGroups)
+      ? state.cardSystem.customReplyGroups
+      : [];
 
     cardCount.textContent = `${cards.length} 张`;
 
@@ -272,21 +306,71 @@
       return;
     }
 
-    cardList.innerHTML = cards.map((card, index) => {
-      const isDisabled = disabled.has(normalizeCardText(card));
+    const groupedCards = new Map();
+
+    groups.forEach(group => {
+      if (!group || !group.name || !Array.isArray(group.items)) return;
+
+      group.items.forEach(card => {
+        const text = normalizeCardText(card);
+        if (!text) return;
+        groupedCards.set(text, group.name);
+      });
+    });
+
+    const byCategory = {};
+
+    cards.forEach(card => {
+      const text = normalizeCardText(card);
+      const category = groupedCards.get(text) || "未分类";
+
+      if (!byCategory[category]) byCategory[category] = [];
+      byCategory[category].push(text);
+    });
+
+    cardList.innerHTML = Object.keys(byCategory).map(category => {
+      const itemsHTML = byCategory[category].map(card => {
+        const index = cards.findIndex(item => normalizeCardText(item) === card);
+
+        return `
+          <span class="card-chip">
+            ${escapeHTML(card)}
+            <button class="inline-x" data-delete-card="${index}" type="button" title="删除这张字卡">×</button>
+          </span>
+        `;
+      }).join("");
 
       return `
-        <span class="card-chip" title="${isDisabled ? "已屏蔽" : "可用"}">
-          ${escapeHTML(card)}
-          <button class="inline-x" data-delete-card="${index}" type="button">×</button>
-        </span>
+        <div class="card-category-block">
+          <div class="card-category-title">${escapeHTML(category)}</div>
+          <div>${itemsHTML}</div>
+        </div>
       `;
     }).join("");
 
     cardList.querySelectorAll("[data-delete-card]").forEach(btn => {
       btn.addEventListener("click", () => {
         const index = Number(btn.dataset.deleteCard);
+        const deletedCard = state.cardSystem.customReplies[index];
+
+        if (!deletedCard) return;
+
         state.cardSystem.customReplies.splice(index, 1);
+
+        if (Array.isArray(state.cardSystem.customReplyGroups)) {
+          state.cardSystem.customReplyGroups.forEach(group => {
+            if (!Array.isArray(group.items)) return;
+            group.items = group.items.filter(item => normalizeCardText(item) !== normalizeCardText(deletedCard));
+          });
+
+          state.cardSystem.customReplyGroups = state.cardSystem.customReplyGroups.filter(group => {
+            return Array.isArray(group.items) && group.items.length > 0;
+          });
+        }
+
+        state.cardSystem.disabledReplyItems = (state.cardSystem.disabledReplyItems || [])
+          .filter(item => normalizeCardText(item) !== normalizeCardText(deletedCard));
+
         saveState();
         renderCards();
       });
@@ -543,6 +627,16 @@
     }).join("");
   }
 
+  function exportFragments() {
+    const data = {
+      exportedAt: now(),
+      type: "mj-card-room-fragments",
+      fragments: state.fragments || []
+    };
+
+    downloadText("mj-card-room-fragments.json", JSON.stringify(data, null, 2));
+  }
+
   function clearFragments() {
     if (!confirm("确定清空所有碎片吗？")) return;
 
@@ -552,7 +646,7 @@
   }
 
   // =====================
-  // 设置 / 全部导入导出
+  // 设置 / 导入导出
   // =====================
 
   function openSettings() {
@@ -599,8 +693,7 @@
   }
 
   // =====================
-  // 陪伴 / 来信占位逻辑
-  // 下一阶段会扩展
+  // 陪伴系统
   // =====================
 
   let companionTimer = null;
@@ -637,7 +730,46 @@
     return `${minutes} 分钟`;
   }
 
+  function formatDurationMs(ms) {
+    const safeMs = Math.max(0, ms || 0);
+
+    const h = Math.floor(safeMs / 3600000);
+    const m = Math.floor((safeMs % 3600000) / 60000);
+    const s = Math.floor((safeMs % 60000) / 1000);
+
+    return (
+      String(h).padStart(2, "0") + ":" +
+      String(m).padStart(2, "0") + ":" +
+      String(s).padStart(2, "0")
+    );
+  }
+
+  function getTotalCompanionMs() {
+    let total = 0;
+
+    (state.companionSessions || []).forEach(session => {
+      if (!session.startedAt) return;
+
+      if (session.status === "active") {
+        total += Math.max(0, now() - session.startedAt);
+      } else if (session.endedAt) {
+        total += Math.max(0, session.endedAt - session.startedAt);
+      }
+    });
+
+    return total;
+  }
+
+  function renderCompanionTotal() {
+    const el = $("companionTotalTime");
+    if (!el) return;
+
+    el.textContent = formatDurationMs(getTotalCompanionMs());
+  }
+
   function updateCompanionTimer() {
+    renderCompanionTotal();
+
     if (!companionEndAt) {
       $("companionTimer").textContent = "00:00:00";
       return;
@@ -680,12 +812,15 @@
       active.endReason = reason || "manual";
       saveState();
     }
+
+    renderCompanionTotal();
   }
 
-  function checkDailyLetter() {
-    // 第一版占位：先实现开关和检查按钮。
-    // 下一版会正式做：24h 自动生成 1-12 张字卡来信 + 评论保存。
+  // =====================
+  // 来信占位
+  // =====================
 
+  function checkDailyLetter() {
     state.settings.dailyLetterEnabled = $("dailyLetterEnabled").checked;
     saveState();
 
@@ -706,6 +841,7 @@
     renderCards();
     renderChat();
     renderFragments();
+    renderCompanionTotal();
   }
 
   // =====================
@@ -724,6 +860,7 @@
         $("tab-" + tabName).classList.add("active");
 
         if (tabName === "fragments") renderFragments();
+        if (tabName === "companion") renderCompanionTotal();
       });
     });
 
@@ -737,7 +874,8 @@
     });
 
     $("addCardsBtn").addEventListener("click", () => {
-      const added = addCardsFromText($("cardInput").value);
+      const added = addCardsFromText($("cardInput").value, $("cardCategoryInput").value);
+
       $("cardInput").value = "";
 
       if (added) {
@@ -779,6 +917,7 @@
 
     $("fragmentImage").addEventListener("change", handleFragmentImageChange);
     $("saveFragmentBtn").addEventListener("click", saveFragment);
+    $("exportFragmentsBtn").addEventListener("click", exportFragments);
     $("clearFragmentsBtn").addEventListener("click", clearFragments);
 
     $("settingsOpenBtn").addEventListener("click", openSettings);
@@ -836,6 +975,7 @@
     setInterval(() => {
       processDueFragments();
       renderFragments();
+      renderCompanionTotal();
     }, 60 * 1000);
   }
 
