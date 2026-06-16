@@ -2,7 +2,7 @@
 // 原生 JS / 本地保存 / 不预设固定字卡内容
 
 (function () {
-  const STORAGE_KEY = "mj_card_room_state_v2";
+  const STORAGE_KEY = "mj_card_room_state_v3";
 
   const SIX_HOURS = 6 * 60 * 60 * 1000;
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
@@ -15,7 +15,10 @@
       replyDelayMin: 800,
       replyDelayMax: 2200,
       dailyLetterEnabled: false,
-      lastLetterAt: null
+      lastLetterAt: null,
+      companionInviteEnabled: true,
+      companionInviteChance: 0.18,
+      companionLeaveChance: 0.04
     },
     cardSystem: {
       customReplies: [],
@@ -29,6 +32,10 @@
   };
 
   let state = loadState();
+
+  let companionTimer = null;
+  let companionEndAt = null;
+  let pendingCompanionInvite = null;
 
   function $(id) {
     return document.getElementById(id);
@@ -144,6 +151,23 @@
       alert("保存失败：本地存储可能满了。图片太大时容易发生，可以删除一些图片碎片或导出备份。");
       console.warn("保存本地数据失败：", error);
     }
+  }
+
+  // =====================
+  // 动态名字渲染
+  // =====================
+
+  function getMJName() {
+    return state.settings.mjName || "MJ";
+  }
+
+  function renderMJText() {
+    const name = getMJName();
+
+    document.querySelectorAll("[data-mj-text]").forEach(el => {
+      const template = el.dataset.mjText || "";
+      el.textContent = template.replaceAll("{name}", name);
+    });
   }
 
   // =====================
@@ -380,10 +404,6 @@
   // =====================
   // 对话系统
   // =====================
-
-  function getMJName() {
-    return state.settings.mjName || "MJ";
-  }
 
   function getReplyDelay() {
     const min = Number(state.settings.replyDelayMin);
@@ -646,60 +666,10 @@
   }
 
   // =====================
-  // 设置 / 导入导出
-  // =====================
-
-  function openSettings() {
-    $("settingsModal").classList.remove("hidden");
-
-    $("mjNameInput").value = state.settings.mjName || "MJ";
-    $("replyDelayMinInput").value = state.settings.replyDelayMin;
-    $("replyDelayMaxInput").value = state.settings.replyDelayMax;
-    $("dailyLetterEnabled").checked = !!state.settings.dailyLetterEnabled;
-  }
-
-  function closeSettings() {
-    $("settingsModal").classList.add("hidden");
-  }
-
-  function saveSettings() {
-    const mjName = $("mjNameInput").value.trim() || "MJ";
-    const delayMin = Number($("replyDelayMinInput").value);
-    const delayMax = Number($("replyDelayMaxInput").value);
-
-    state.settings.mjName = mjName;
-    state.settings.replyDelayMin = Number.isFinite(delayMin) ? Math.max(0, delayMin) : 800;
-    state.settings.replyDelayMax = Number.isFinite(delayMax) ? Math.max(state.settings.replyDelayMin, delayMax) : 2200;
-    state.settings.dailyLetterEnabled = $("dailyLetterEnabled").checked;
-
-    saveState();
-    renderAll();
-    closeSettings();
-  }
-
-  function exportAll() {
-    downloadText("mj-card-room-backup.json", JSON.stringify(state, null, 2));
-  }
-
-  async function importAll(file) {
-    const text = await readFileAsText(file);
-    const data = JSON.parse(text);
-
-    state = mergeState(defaultState, data);
-
-    saveState();
-    renderAll();
-    alert("导入完成。");
-  }
-
-  // =====================
   // 陪伴系统
   // =====================
 
-  let companionTimer = null;
-  let companionEndAt = null;
-
-  function startCompanion(minutes) {
+  function startCompanion(minutes, initiator) {
     const durationMs = minutes * 60 * 1000;
     companionEndAt = now() + durationMs;
 
@@ -709,7 +679,7 @@
       plannedEndAt: companionEndAt,
       durationMinutes: minutes,
       status: "active",
-      initiator: "me"
+      initiator: initiator || "me"
     });
 
     saveState();
@@ -775,6 +745,8 @@
       return;
     }
 
+    maybeMJLeavesCompanion();
+
     const left = Math.max(0, companionEndAt - now());
 
     const h = Math.floor(left / 3600000);
@@ -800,6 +772,8 @@
 
     if (reason === "finished") {
       $("companionStatus").textContent = "这次陪伴结束了。";
+    } else if (reason === "mj_left") {
+      $("companionStatus").textContent = `${getMJName()} 好像有事，待会儿再试试吧。`;
     } else {
       $("companionStatus").textContent = "陪伴已结束。";
     }
@@ -816,20 +790,280 @@
     renderCompanionTotal();
   }
 
+  function maybeCreateCompanionInvite() {
+    if (!state.settings.companionInviteEnabled) return;
+    if (pendingCompanionInvite) return;
+    if (companionEndAt) return;
+
+    if (Math.random() > state.settings.companionInviteChance) return;
+
+    const options = [30, 60, 120, 480];
+    const minutes = options[randomInt(0, options.length - 1)];
+
+    pendingCompanionInvite = {
+      id: makeId("invite"),
+      minutes,
+      createdAt: now()
+    };
+
+    renderCompanionInvite();
+  }
+
+  function renderCompanionInvite() {
+    const box = $("companionInvite");
+    const text = $("companionInviteText");
+
+    if (!box || !text) return;
+
+    if (!pendingCompanionInvite) {
+      box.classList.add("hidden");
+      return;
+    }
+
+    text.textContent = `${getMJName()} 想陪你 ${formatDurationLabel(pendingCompanionInvite.minutes)}。`;
+    box.classList.remove("hidden");
+  }
+
+  function acceptCompanionInvite() {
+    if (!pendingCompanionInvite) return;
+
+    const minutes = pendingCompanionInvite.minutes;
+    pendingCompanionInvite = null;
+    renderCompanionInvite();
+    startCompanion(minutes, "mj");
+  }
+
+  function declineCompanionInvite() {
+    pendingCompanionInvite = null;
+    renderCompanionInvite();
+    $("companionStatus").textContent = `你这次没有接受 ${getMJName()} 的陪伴邀请。`;
+  }
+
+  function maybeMJLeavesCompanion() {
+    if (!companionEndAt) return;
+    if (Math.random() > state.settings.companionLeaveChance) return;
+
+    endCompanion("mj_left");
+  }
+
   // =====================
-  // 来信占位
+  // 来信系统
   // =====================
+
+  function createLetter(force) {
+    if (!force && !state.settings.dailyLetterEnabled) {
+      return {
+        ok: false,
+        message: "每日来信还没有开启。"
+      };
+    }
+
+    const currentTime = now();
+
+    if (!force && state.settings.lastLetterAt && currentTime - state.settings.lastLetterAt < TWENTY_FOUR_HOURS) {
+      return {
+        ok: false,
+        message: `还没到下一封来信时间。上次来信：${formatTime(state.settings.lastLetterAt)}`
+      };
+    }
+
+    const cards = drawCards(1, 12);
+
+    if (!cards.length) {
+      return {
+        ok: false,
+        message: "没有可用字卡，无法生成来信。"
+      };
+    }
+
+    const letter = {
+      id: makeId("letter"),
+      createdAt: currentTime,
+      cards,
+      text: cards.join("\n"),
+      comments: []
+    };
+
+    state.letters.unshift(letter);
+    state.settings.lastLetterAt = currentTime;
+
+    saveState();
+    renderLetters();
+
+    return {
+      ok: true,
+      message: `${getMJName()} 发来了一封信。`
+    };
+  }
 
   function checkDailyLetter() {
     state.settings.dailyLetterEnabled = $("dailyLetterEnabled").checked;
     saveState();
 
-    if (!state.settings.dailyLetterEnabled) {
-      alert("每日来信还没有开启。");
+    const result = createLetter(false);
+    $("letterStatus").textContent = result.message;
+  }
+
+  function forceLetter() {
+    const result = createLetter(true);
+    $("letterStatus").textContent = result.message;
+  }
+
+  function addLetterComment(letterId, textareaId) {
+    const textarea = $(textareaId);
+    if (!textarea) return;
+
+    const text = textarea.value.trim();
+    if (!text) return;
+
+    const letter = state.letters.find(item => item.id === letterId);
+    if (!letter) return;
+
+    if (!Array.isArray(letter.comments)) {
+      letter.comments = [];
+    }
+
+    letter.comments.push({
+      id: makeId("comment"),
+      text,
+      createdAt: now()
+    });
+
+    saveState();
+    renderLetters();
+  }
+
+  function renderLetters() {
+    const list = $("letterList");
+    if (!list) return;
+
+    if (!state.letters.length) {
+      list.innerHTML = `<div class="hint">还没有来信。</div>`;
       return;
     }
 
-    alert("每日来信功能下一步接入：每 24 小时生成一封 1-12 张字卡信。");
+    list.innerHTML = state.letters.map(letter => {
+      const comments = Array.isArray(letter.comments) ? letter.comments : [];
+
+      const commentsHTML = comments.length
+        ? `
+          <div class="letter-comment-list">
+            ${comments.map(comment => `
+              <div class="letter-comment">
+                <div>${escapeHTML(comment.text)}</div>
+                <div class="letter-comment-time">${escapeHTML(formatTime(comment.createdAt))}</div>
+              </div>
+            `).join("")}
+          </div>
+        `
+        : `<div class="hint">还没有评论。</div>`;
+
+      const textareaId = "letterComment_" + letter.id;
+
+      return `
+        <div class="letter-card">
+          <div class="letter-title">${escapeHTML(getMJName())} 的来信</div>
+          <div class="record-time">${escapeHTML(formatTime(letter.createdAt))}</div>
+
+          <div class="letter-body">
+            ${(letter.cards || []).map(card => `<span class="card-chip">${escapeHTML(card)}</span>`).join("")}
+          </div>
+
+          <div class="letter-comment-box">
+            <label>
+              你的评论
+              <textarea id="${textareaId}" rows="2" placeholder="写下你对这封信的回复……"></textarea>
+            </label>
+            <button class="secondary-btn letter-comment-save" data-letter-id="${letter.id}" data-textarea-id="${textareaId}" type="button">
+              保存评论
+            </button>
+
+            ${commentsHTML}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    list.querySelectorAll(".letter-comment-save").forEach(btn => {
+      btn.addEventListener("click", () => {
+        addLetterComment(btn.dataset.letterId, btn.dataset.textareaId);
+      });
+    });
+  }
+
+  function exportLetters() {
+    const data = {
+      exportedAt: now(),
+      type: "mj-card-room-letters",
+      letters: state.letters || []
+    };
+
+    downloadText("mj-card-room-letters.json", JSON.stringify(data, null, 2));
+  }
+
+  function clearLetters() {
+    if (!confirm("确定清空所有来信吗？")) return;
+
+    state.letters = [];
+    state.settings.lastLetterAt = null;
+    saveState();
+    renderLetters();
+  }
+
+  function processDailyLetterOnOpen() {
+    if (!state.settings.dailyLetterEnabled) return;
+
+    const result = createLetter(false);
+    if (result.ok && $("letterStatus")) {
+      $("letterStatus").textContent = result.message;
+    }
+  }
+
+  // =====================
+  // 设置 / 导入导出
+  // =====================
+
+  function openSettings() {
+    $("settingsModal").classList.remove("hidden");
+
+    $("mjNameInput").value = state.settings.mjName || "MJ";
+    $("replyDelayMinInput").value = state.settings.replyDelayMin;
+    $("replyDelayMaxInput").value = state.settings.replyDelayMax;
+    $("dailyLetterEnabled").checked = !!state.settings.dailyLetterEnabled;
+  }
+
+  function closeSettings() {
+    $("settingsModal").classList.add("hidden");
+  }
+
+  function saveSettings() {
+    const mjName = $("mjNameInput").value.trim() || "MJ";
+    const delayMin = Number($("replyDelayMinInput").value);
+    const delayMax = Number($("replyDelayMaxInput").value);
+
+    state.settings.mjName = mjName;
+    state.settings.replyDelayMin = Number.isFinite(delayMin) ? Math.max(0, delayMin) : 800;
+    state.settings.replyDelayMax = Number.isFinite(delayMax) ? Math.max(state.settings.replyDelayMin, delayMax) : 2200;
+    state.settings.dailyLetterEnabled = $("dailyLetterEnabled").checked;
+
+    saveState();
+    renderAll();
+    closeSettings();
+  }
+
+  function exportAll() {
+    downloadText("mj-card-room-backup.json", JSON.stringify(state, null, 2));
+  }
+
+  async function importAll(file) {
+    const text = await readFileAsText(file);
+    const data = JSON.parse(text);
+
+    state = mergeState(defaultState, data);
+
+    saveState();
+    renderAll();
+    alert("导入完成。");
   }
 
   // =====================
@@ -837,11 +1071,14 @@
   // =====================
 
   function renderAll() {
+    renderMJText();
     $("typingName").textContent = getMJName();
     renderCards();
     renderChat();
     renderFragments();
     renderCompanionTotal();
+    renderCompanionInvite();
+    renderLetters();
   }
 
   // =====================
@@ -860,7 +1097,16 @@
         $("tab-" + tabName).classList.add("active");
 
         if (tabName === "fragments") renderFragments();
-        if (tabName === "companion") renderCompanionTotal();
+
+        if (tabName === "companion") {
+          renderCompanionTotal();
+          maybeCreateCompanionInvite();
+        }
+
+        if (tabName === "letters") {
+          processDailyLetterOnOpen();
+          renderLetters();
+        }
       });
     });
 
@@ -943,11 +1189,14 @@
     document.querySelectorAll(".duration-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         const minutes = Number(btn.dataset.duration);
-        startCompanion(minutes);
+        startCompanion(minutes, "me");
       });
     });
 
     $("endCompanionBtn").addEventListener("click", () => endCompanion("manual"));
+
+    $("acceptCompanionInviteBtn").addEventListener("click", acceptCompanionInvite);
+    $("declineCompanionInviteBtn").addEventListener("click", declineCompanionInvite);
 
     $("dailyLetterEnabled").addEventListener("change", () => {
       state.settings.dailyLetterEnabled = $("dailyLetterEnabled").checked;
@@ -955,6 +1204,9 @@
     });
 
     $("checkLetterBtn").addEventListener("click", checkDailyLetter);
+    $("forceLetterBtn").addEventListener("click", forceLetter);
+    $("exportLettersBtn").addEventListener("click", exportLetters);
+    $("clearLettersBtn").addEventListener("click", clearLetters);
 
     $("settingsModal").addEventListener("click", event => {
       if (event.target === $("settingsModal")) {
@@ -970,6 +1222,7 @@
   function init() {
     bindEvents();
     processDueFragments();
+    processDailyLetterOnOpen();
     renderAll();
 
     setInterval(() => {
@@ -977,6 +1230,10 @@
       renderFragments();
       renderCompanionTotal();
     }, 60 * 1000);
+
+    setInterval(() => {
+      maybeCreateCompanionInvite();
+    }, 5 * 60 * 1000);
   }
 
   init();
