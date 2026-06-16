@@ -1,10 +1,11 @@
-// MJ Card Room
+// Lisa Card Room
 // 原生 JS / 本地保存 / 不预设固定字卡内容
 
 (function () {
-  const STORAGE_KEY = "mj_card_room_state";
+  const STORAGE_KEY = "lisa_card_room_state";
 
   const LEGACY_STORAGE_KEYS = [
+    "mj_card_room_state",
     "mj_card_room_state_v1",
     "mj_card_room_state_v2",
     "mj_card_room_state_v3"
@@ -17,7 +18,7 @@
 
   const defaultState = {
     settings: {
-      mjName: "MJ",
+      lisaName: "Lisa",
       replyDelayMin: 800,
       replyDelayMax: 2200,
       dailyLetterEnabled: false,
@@ -128,7 +129,6 @@
         return mergeState(defaultState, saved);
       }
 
-      // 兼容旧版本存档：v1 / v2 / v3
       for (const key of LEGACY_STORAGE_KEYS) {
         const legacyRaw = localStorage.getItem(key);
 
@@ -150,10 +150,13 @@
   }
 
   function mergeState(base, saved) {
+    const savedSettings = saved.settings || {};
+
     return {
       settings: {
         ...base.settings,
-        ...(saved.settings || {})
+        ...savedSettings,
+        lisaName: savedSettings.lisaName || savedSettings.mjName || base.settings.lisaName
       },
       cardSystem: {
         ...base.cardSystem,
@@ -179,15 +182,15 @@
   // 动态名字渲染
   // =====================
 
-  function getMJName() {
-    return state.settings.mjName || "MJ";
+  function getLisaName() {
+    return state.settings.lisaName || "Lisa";
   }
 
-  function renderMJText() {
-    const name = getMJName();
+  function renderLisaText() {
+    const name = getLisaName();
 
-    document.querySelectorAll("[data-mj-text]").forEach(el => {
-      const template = el.dataset.mjText || "";
+    document.querySelectorAll("[data-lisa-text]").forEach(el => {
+      const template = el.dataset.lisaText || "";
       el.textContent = template.replaceAll("{name}", name);
     });
   }
@@ -333,7 +336,7 @@
       disabledReplyItems: state.cardSystem.disabledReplyItems || []
     };
 
-    downloadText("mj-card-room-cards.json", JSON.stringify(data, null, 2));
+    downloadText("lisa-card-room-cards.json", JSON.stringify(data, null, 2));
   }
 
   function renderCards() {
@@ -474,7 +477,7 @@
 
       addChatMessage({
         id: makeId("msg"),
-        sender: "mj",
+        sender: "lisa",
         text: cards.join(" "),
         cards,
         createdAt: now()
@@ -486,7 +489,7 @@
     const el = $("typingIndicator");
     const name = $("typingName");
 
-    name.textContent = getMJName();
+    name.textContent = getLisaName();
     el.classList.toggle("hidden", !show);
   }
 
@@ -501,7 +504,7 @@
     chatList.innerHTML = state.chatMessages.map(msg => {
       const senderClass = msg.sender === "me" ? "me" : "mj";
 
-      const content = msg.sender === "mj" && msg.cards && msg.cards.length
+      const content = msg.sender !== "me" && msg.cards && msg.cards.length
         ? msg.cards.map(card => `<span class="card-chip">${escapeHTML(card)}</span>`).join("")
         : escapeHTML(msg.text);
 
@@ -593,20 +596,20 @@
 
     if (!willReply) {
       fragment.replyStatus = "no_reply";
-      status.textContent = `${getMJName()} 这次没有回应。碎片已保存。`;
+      status.textContent = `${getLisaName()} 这次没有回应。碎片已保存。`;
     } else if (!getAvailableCards().length) {
       fragment.replyStatus = "no_cards";
       status.textContent = "没有可用字卡。碎片已保存，但没有生成回应。";
     } else if (feedbackMode === "delayed") {
       fragment.replyStatus = "pending";
       fragment.dueAt = now() + randomBetween(SIX_HOURS, TWENTY_FOUR_HOURS);
-      status.textContent = `${getMJName()} 会稍后回应。预计不早于：${formatTime(fragment.dueAt)}`;
+      status.textContent = `${getLisaName()} 会稍后回应。预计不早于：${formatTime(fragment.dueAt)}`;
     } else {
       const cards = drawCards(1, 4);
       fragment.replyStatus = "replied";
       fragment.replyCards = cards;
       fragment.repliedAt = now();
-      status.textContent = `${getMJName()} 回应了。`;
+      status.textContent = `${getLisaName()} 回应了。`;
     }
 
     state.fragments.unshift(fragment);
@@ -621,7 +624,7 @@
   }
 
   function getFragmentStatusHTML(fragment) {
-    const name = getMJName();
+    const name = getLisaName();
 
     if (fragment.replyStatus === "pending") {
       return `<div class="record-status pending">${escapeHTML(name)} 还没有回应。预计不早于：${escapeHTML(formatTime(fragment.dueAt))}</div>`;
@@ -672,11 +675,11 @@
   function exportFragments() {
     const data = {
       exportedAt: now(),
-      type: "mj-card-room-fragments",
+      type: "lisa-card-room-fragments",
       fragments: state.fragments || []
     };
 
-    downloadText("mj-card-room-fragments.json", JSON.stringify(data, null, 2));
+    downloadText("lisa-card-room-fragments.json", JSON.stringify(data, null, 2));
   }
 
   function clearFragments() {
@@ -706,7 +709,7 @@
 
     saveState();
 
-    $("companionStatus").textContent = `${getMJName()} 正在陪你 ${formatDurationLabel(minutes)}。`;
+    $("companionStatus").textContent = `${getLisaName()} 正在陪你 ${formatDurationLabel(minutes)}。`;
 
     if (companionTimer) clearInterval(companionTimer);
 
@@ -767,7 +770,7 @@
       return;
     }
 
-    maybeMJLeavesCompanion();
+    maybeLisaLeavesCompanion();
 
     const left = Math.max(0, companionEndAt - now());
 
@@ -794,8 +797,8 @@
 
     if (reason === "finished") {
       $("companionStatus").textContent = "这次陪伴结束了。";
-    } else if (reason === "mj_left") {
-      $("companionStatus").textContent = `${getMJName()} 好像有事，待会儿再试试吧。`;
+    } else if (reason === "lisa_left") {
+      $("companionStatus").textContent = `${getLisaName()} 好像有事，待会儿再试试吧。`;
     } else {
       $("companionStatus").textContent = "陪伴已结束。";
     }
@@ -842,7 +845,7 @@
       return;
     }
 
-    text.textContent = `${getMJName()} 想陪你 ${formatDurationLabel(pendingCompanionInvite.minutes)}。`;
+    text.textContent = `${getLisaName()} 想陪你 ${formatDurationLabel(pendingCompanionInvite.minutes)}。`;
     box.classList.remove("hidden");
   }
 
@@ -852,20 +855,20 @@
     const minutes = pendingCompanionInvite.minutes;
     pendingCompanionInvite = null;
     renderCompanionInvite();
-    startCompanion(minutes, "mj");
+    startCompanion(minutes, "lisa");
   }
 
   function declineCompanionInvite() {
     pendingCompanionInvite = null;
     renderCompanionInvite();
-    $("companionStatus").textContent = `你这次没有接受 ${getMJName()} 的陪伴邀请。`;
+    $("companionStatus").textContent = `你这次没有接受 ${getLisaName()} 的陪伴邀请。`;
   }
 
-  function maybeMJLeavesCompanion() {
+  function maybeLisaLeavesCompanion() {
     if (!companionEndAt) return;
     if (Math.random() > state.settings.companionLeaveChance) return;
 
-    endCompanion("mj_left");
+    endCompanion("lisa_left");
   }
 
   // =====================
@@ -914,7 +917,7 @@
 
     return {
       ok: true,
-      message: `${getMJName()} 发来了一封信。`
+      message: `${getLisaName()} 发来了一封信。`
     };
   }
 
@@ -984,7 +987,7 @@
 
       return `
         <div class="letter-card">
-          <div class="letter-title">${escapeHTML(getMJName())} 的来信</div>
+          <div class="letter-title">${escapeHTML(getLisaName())} 的来信</div>
           <div class="record-time">${escapeHTML(formatTime(letter.createdAt))}</div>
 
           <div class="letter-body">
@@ -1016,11 +1019,11 @@
   function exportLetters() {
     const data = {
       exportedAt: now(),
-      type: "mj-card-room-letters",
+      type: "lisa-card-room-letters",
       letters: state.letters || []
     };
 
-    downloadText("mj-card-room-letters.json", JSON.stringify(data, null, 2));
+    downloadText("lisa-card-room-letters.json", JSON.stringify(data, null, 2));
   }
 
   function clearLetters() {
@@ -1048,7 +1051,7 @@
   function openSettings() {
     $("settingsModal").classList.remove("hidden");
 
-    $("mjNameInput").value = state.settings.mjName || "MJ";
+    $("lisaNameInput").value = state.settings.lisaName || "Lisa";
     $("replyDelayMinInput").value = state.settings.replyDelayMin;
     $("replyDelayMaxInput").value = state.settings.replyDelayMax;
     $("dailyLetterEnabled").checked = !!state.settings.dailyLetterEnabled;
@@ -1059,11 +1062,11 @@
   }
 
   function saveSettings() {
-    const mjName = $("mjNameInput").value.trim() || "MJ";
+    const lisaName = $("lisaNameInput").value.trim() || "Lisa";
     const delayMin = Number($("replyDelayMinInput").value);
     const delayMax = Number($("replyDelayMaxInput").value);
 
-    state.settings.mjName = mjName;
+    state.settings.lisaName = lisaName;
     state.settings.replyDelayMin = Number.isFinite(delayMin) ? Math.max(0, delayMin) : 800;
     state.settings.replyDelayMax = Number.isFinite(delayMax) ? Math.max(state.settings.replyDelayMin, delayMax) : 2200;
     state.settings.dailyLetterEnabled = $("dailyLetterEnabled").checked;
@@ -1074,7 +1077,7 @@
   }
 
   function exportAll() {
-    downloadText("mj-card-room-backup.json", JSON.stringify(state, null, 2));
+    downloadText("lisa-card-room-backup.json", JSON.stringify(state, null, 2));
   }
 
   async function importAll(file) {
@@ -1093,8 +1096,8 @@
   // =====================
 
   function renderAll() {
-    renderMJText();
-    $("typingName").textContent = getMJName();
+    renderLisaText();
+    $("typingName").textContent = getLisaName();
     renderCards();
     renderChat();
     renderFragments();
