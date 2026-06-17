@@ -1,5 +1,5 @@
 // Lisa Card Room
-// VERSION: card-chat-mode-2026-06-17
+// VERSION: clean-card-chat-mode-2026-06-17
 // 原生 JS / 本地保存 / 不预设固定字卡内容
 
 (function () {
@@ -838,10 +838,6 @@
     renderFragments();
   }
 
-  // =====================
-  // 陪伴系统
-  // =====================
-
   function requestCompanion(minutes) {
     if (companionEndAt) {
       $("companionStatus").textContent = "已经在陪伴中了。";
@@ -1067,10 +1063,6 @@
     endCompanion("lisa_left");
   }
 
-  // =====================
-  // 来信系统
-  // =====================
-
   function createLetter(force) {
     if (!force && !state.settings.dailyLetterEnabled) {
       return {
@@ -1240,10 +1232,6 @@
     }
   }
 
-  // =====================
-  // 设置 / 导入导出
-  // =====================
-
   function openSettings() {
     $("settingsModal").classList.remove("hidden");
 
@@ -1289,11 +1277,7 @@
 
   function renderAll() {
     renderLisaText();
-
-    if ($("typingName")) {
-      $("typingName").textContent = getLisaName();
-    }
-
+    $("typingName").textContent = getLisaName();
     renderCards();
     renderChat();
     renderFragments();
@@ -1301,12 +1285,6 @@
     renderCompanionInvite();
     renderLetters();
     renderCardChatPicker();
-  }
-
-  function bindIfExists(id, eventName, handler) {
-    const el = $(id);
-    if (!el) return;
-    el.addEventListener(eventName, handler);
   }
 
   function bindEvents() {
@@ -1320,11 +1298,8 @@
         btn.classList.add("active");
         $("tab-" + tabName).classList.add("active");
 
+        if (tabName === "chat") renderCardChatPicker();
         if (tabName === "fragments") renderFragments();
-
-        if (tabName === "chat") {
-          renderCardChatPicker();
-        }
 
         if (tabName === "companion") {
           renderCompanionTotal();
@@ -1338,23 +1313,20 @@
       });
     });
 
-    bindIfExists("sendChatBtn", "click", sendChat);
+    $("sendChatBtn").addEventListener("click", sendChat);
 
-    const chatInput = $("chatInput");
-    if (chatInput) {
-      chatInput.addEventListener("keydown", event => {
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          sendChat();
-        }
-      });
-    }
+    $("chatInput").addEventListener("keydown", event => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendChat();
+      }
+    });
 
-    bindIfExists("cardChatModeBtn", "click", toggleCardChatMode);
-    bindIfExists("sendCardChatBtn", "click", sendCardChat);
-    bindIfExists("clearCardChatBtn", "click", clearCardChatSelection);
+    $("cardChatModeBtn").addEventListener("click", toggleCardChatMode);
+    $("sendCardChatBtn").addEventListener("click", sendCardChat);
+    $("clearCardChatBtn").addEventListener("click", clearCardChatSelection);
 
-    bindIfExists("addCardsBtn", "click", () => {
+    $("addCardsBtn").addEventListener("click", () => {
       const added = addCardsFromText($("cardInput").value, $("cardCategoryInput").value);
 
       $("cardInput").value = "";
@@ -1366,7 +1338,7 @@
       }
     });
 
-    bindIfExists("clearCardsBtn", "click", () => {
+    $("clearCardsBtn").addEventListener("click", () => {
       if (!confirm("确定清空字卡库吗？")) return;
 
       state.cardSystem.customReplies = [];
@@ -1378,63 +1350,56 @@
       renderCardChatPicker();
     });
 
-    bindIfExists("exportCardsBtn", "click", exportCardJSON);
+    $("exportCardsBtn").addEventListener("click", exportCardJSON);
 
-    const importCardsFile = $("importCardsFile");
-    if (importCardsFile) {
-      importCardsFile.addEventListener("change", async event => {
-        const file = event.target.files[0];
-        if (!file) return;
+    $("importCardsFile").addEventListener("change", async event => {
+      const file = event.target.files[0];
+      if (!file) return;
 
-        try {
-          const text = await readFileAsText(file);
-          const data = JSON.parse(text);
+      try {
+        const text = await readFileAsText(file);
+        const data = JSON.parse(text);
 
-          importCardJSON(data);
-          alert("字卡导入完成。");
-        } catch (error) {
-          alert("导入失败：JSON 格式不正确，或文件内容不兼容。");
-          console.warn(error);
-        }
+        importCardJSON(data);
+        alert("字卡导入完成。");
+      } catch (error) {
+        alert("导入失败：JSON 格式不正确，或文件内容不兼容。");
+        console.warn(error);
+      }
 
-        event.target.value = "";
-      });
-    }
+      event.target.value = "";
+    });
 
-    bindIfExists("fragmentImage", "change", handleFragmentImageChange);
-    bindIfExists("saveFragmentBtn", "click", saveFragment);
-    bindIfExists("exportFragmentsBtn", "click", exportFragments);
-    bindIfExists("clearFragmentsBtn", "click", clearFragments);
+    $("fragmentImage").addEventListener("change", handleFragmentImageChange);
+    $("saveFragmentBtn").addEventListener("click", saveFragment);
+    $("exportFragmentsBtn").addEventListener("click", exportFragments);
+    $("clearFragmentsBtn").addEventListener("click", clearFragments);
 
-    bindIfExists("fragmentSearchInput", "input", renderFragments);
-
-    bindIfExists("clearFragmentSearchBtn", "click", () => {
+    $("fragmentSearchInput").addEventListener("input", renderFragments);
+    $("clearFragmentSearchBtn").addEventListener("click", () => {
       $("fragmentSearchInput").value = "";
       renderFragments();
     });
 
-    bindIfExists("settingsOpenBtn", "click", openSettings);
-    bindIfExists("settingsCloseBtn", "click", closeSettings);
-    bindIfExists("saveSettingsBtn", "click", saveSettings);
+    $("settingsOpenBtn").addEventListener("click", openSettings);
+    $("settingsCloseBtn").addEventListener("click", closeSettings);
+    $("saveSettingsBtn").addEventListener("click", saveSettings);
 
-    bindIfExists("exportAllBtn", "click", exportAll);
+    $("exportAllBtn").addEventListener("click", exportAll);
 
-    const importAllFile = $("importAllFile");
-    if (importAllFile) {
-      importAllFile.addEventListener("change", async event => {
-        const file = event.target.files[0];
-        if (!file) return;
+    $("importAllFile").addEventListener("change", async event => {
+      const file = event.target.files[0];
+      if (!file) return;
 
-        try {
-          await importAll(file);
-        } catch (error) {
-          alert("导入失败：文件格式不正确。");
-          console.warn(error);
-        }
+      try {
+        await importAll(file);
+      } catch (error) {
+        alert("导入失败：文件格式不正确。");
+        console.warn(error);
+      }
 
-        event.target.value = "";
-      });
-    }
+      event.target.value = "";
+    });
 
     document.querySelectorAll(".duration-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -1443,29 +1408,26 @@
       });
     });
 
-    bindIfExists("endCompanionBtn", "click", () => endCompanion("manual"));
+    $("endCompanionBtn").addEventListener("click", () => endCompanion("manual"));
 
-    bindIfExists("acceptCompanionInviteBtn", "click", acceptCompanionInvite);
-    bindIfExists("declineCompanionInviteBtn", "click", declineCompanionInvite);
+    $("acceptCompanionInviteBtn").addEventListener("click", acceptCompanionInvite);
+    $("declineCompanionInviteBtn").addEventListener("click", declineCompanionInvite);
 
-    bindIfExists("dailyLetterEnabled", "change", () => {
+    $("dailyLetterEnabled").addEventListener("change", () => {
       state.settings.dailyLetterEnabled = $("dailyLetterEnabled").checked;
       saveState();
     });
 
-    bindIfExists("checkLetterBtn", "click", checkDailyLetter);
-    bindIfExists("forceLetterBtn", "click", forceLetter);
-    bindIfExists("exportLettersBtn", "click", exportLetters);
-    bindIfExists("clearLettersBtn", "click", clearLetters);
+    $("checkLetterBtn").addEventListener("click", checkDailyLetter);
+    $("forceLetterBtn").addEventListener("click", forceLetter);
+    $("exportLettersBtn").addEventListener("click", exportLetters);
+    $("clearLettersBtn").addEventListener("click", clearLetters);
 
-    const modal = $("settingsModal");
-    if (modal) {
-      modal.addEventListener("click", event => {
-        if (event.target === modal) {
-          closeSettings();
-        }
-      });
-    }
+    $("settingsModal").addEventListener("click", event => {
+      if (event.target === $("settingsModal")) {
+        closeSettings();
+      }
+    });
   }
 
   function init() {
