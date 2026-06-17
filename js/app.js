@@ -1,5 +1,5 @@
 // Lisa Card Room
-// VERSION: companion-quarter-check-2026-06-17
+// VERSION: card-chat-mode-2026-06-17
 // 原生 JS / 本地保存 / 不预设固定字卡内容
 
 (function () {
@@ -48,6 +48,9 @@
   let companionTimer = null;
   let companionEndAt = null;
   let pendingCompanionInvite = null;
+
+  let selectedCardChatCards = [];
+  let cardChatModeEnabled = false;
 
   function $(id) {
     return document.getElementById(id);
@@ -291,6 +294,7 @@
 
     saveState();
     renderCards();
+    renderCardChatPicker();
 
     return added;
   }
@@ -324,6 +328,7 @@
 
     saveState();
     renderCards();
+    renderCardChatPicker();
   }
 
   function exportCardJSON() {
@@ -339,6 +344,8 @@
   function renderCards() {
     const cardList = $("cardList");
     const cardCount = $("cardCount");
+
+    if (!cardList || !cardCount) return;
 
     const cards = state.cardSystem.customReplies || [];
     const groups = Array.isArray(state.cardSystem.customReplyGroups)
@@ -417,8 +424,13 @@
         state.cardSystem.disabledReplyItems = (state.cardSystem.disabledReplyItems || [])
           .filter(item => normalizeCardText(item) !== normalizeCardText(deletedCard));
 
+        selectedCardChatCards = selectedCardChatCards.filter(item => {
+          return normalizeCardText(item) !== normalizeCardText(deletedCard);
+        });
+
         saveState();
         renderCards();
+        renderCardChatPicker();
       });
     });
   }
@@ -440,6 +452,8 @@
   }
 
   function sendChat() {
+    if (cardChatModeEnabled) return;
+
     const input = $("chatInput");
     const text = input.value.trim();
 
@@ -478,6 +492,127 @@
     }, getReplyDelay());
   }
 
+  function getCardChatDelay() {
+    const input = $("cardChatDelayInput");
+    const seconds = input ? Number(input.value) : 2;
+
+    if (!Number.isFinite(seconds)) return 2000;
+
+    return Math.max(0, seconds) * 1000;
+  }
+
+  function toggleCardChatMode() {
+    cardChatModeEnabled = !cardChatModeEnabled;
+    selectedCardChatCards = [];
+
+    document.body.classList.toggle("card-chat-mode", cardChatModeEnabled);
+
+    const modeBtn = $("cardChatModeBtn");
+    const picker = $("cardChatPicker");
+
+    if (modeBtn) {
+      modeBtn.textContent = cardChatModeEnabled
+        ? "退出字卡对话模式"
+        : "进入字卡对话模式";
+    }
+
+    if (picker) {
+      picker.classList.toggle("hidden", !cardChatModeEnabled);
+    }
+
+    renderCardChatPicker();
+  }
+
+  function renderCardChatPicker() {
+    const list = $("cardChatList");
+    const selected = $("cardChatSelected");
+
+    if (!list || !selected) return;
+
+    const cards = getAvailableCards();
+
+    if (!cards.length) {
+      list.innerHTML = `<div class="hint">字卡库里还没有可用字卡。</div>`;
+      selected.innerHTML = `<div class="hint">还没有选择字卡。</div>`;
+      return;
+    }
+
+    selected.innerHTML = selectedCardChatCards.length
+      ? selectedCardChatCards.map(card => `<span class="card-chip">${escapeHTML(card)}</span>`).join("")
+      : `<div class="hint">还没有选择字卡。</div>`;
+
+    list.innerHTML = cards.map(card => {
+      const selectedClass = selectedCardChatCards.includes(card) ? "selected" : "";
+
+      return `
+        <button class="card-chat-choice ${selectedClass}" data-card-chat-card="${escapeHTML(card)}" type="button">
+          ${escapeHTML(card)}
+        </button>
+      `;
+    }).join("");
+
+    list.querySelectorAll("[data-card-chat-card]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const card = btn.dataset.cardChatCard;
+
+        if (selectedCardChatCards.includes(card)) {
+          selectedCardChatCards = selectedCardChatCards.filter(item => item !== card);
+        } else {
+          selectedCardChatCards.push(card);
+        }
+
+        renderCardChatPicker();
+      });
+    });
+  }
+
+  function clearCardChatSelection() {
+    selectedCardChatCards = [];
+    renderCardChatPicker();
+  }
+
+  function sendCardChat() {
+    if (!cardChatModeEnabled) return;
+
+    if (!selectedCardChatCards.length) {
+      alert("先选择至少一张字卡。");
+      return;
+    }
+
+    addChatMessage({
+      id: makeId("msg"),
+      sender: "me",
+      text: selectedCardChatCards.join(" "),
+      cards: [...selectedCardChatCards],
+      createdAt: now()
+    });
+
+    selectedCardChatCards = [];
+    renderCardChatPicker();
+
+    const cards = drawCards(1, 4);
+
+    if (!cards.length) {
+      showTyping(false);
+      alert("字卡库里还没有可用字卡。请先去「字卡库」添加。");
+      return;
+    }
+
+    showTyping(true);
+
+    setTimeout(() => {
+      showTyping(false);
+
+      addChatMessage({
+        id: makeId("msg"),
+        sender: "lisa",
+        text: cards.join(" "),
+        cards,
+        createdAt: now()
+      });
+    }, getCardChatDelay());
+  }
+
   function showTyping(show) {
     const el = $("typingIndicator");
     const name = $("typingName");
@@ -489,6 +624,8 @@
   function renderChat() {
     const chatList = $("chatList");
 
+    if (!chatList) return;
+
     if (!state.chatMessages.length) {
       chatList.innerHTML = `<div class="hint">还没有对话。你可以先发一句话。</div>`;
       return;
@@ -497,7 +634,7 @@
     chatList.innerHTML = state.chatMessages.map(msg => {
       const senderClass = msg.sender === "me" ? "me" : "mj";
 
-      const content = msg.sender !== "me" && msg.cards && msg.cards.length
+      const content = msg.cards && msg.cards.length
         ? msg.cards.map(card => `<span class="card-chip">${escapeHTML(card)}</span>`).join("")
         : escapeHTML(msg.text);
 
@@ -644,6 +781,9 @@
 
     const list = $("fragmentList");
     const searchInput = $("fragmentSearchInput");
+
+    if (!list) return;
+
     const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
 
     let fragments = state.fragments || [];
@@ -1149,13 +1289,24 @@
 
   function renderAll() {
     renderLisaText();
-    $("typingName").textContent = getLisaName();
+
+    if ($("typingName")) {
+      $("typingName").textContent = getLisaName();
+    }
+
     renderCards();
     renderChat();
     renderFragments();
     renderCompanionTotal();
     renderCompanionInvite();
     renderLetters();
+    renderCardChatPicker();
+  }
+
+  function bindIfExists(id, eventName, handler) {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener(eventName, handler);
   }
 
   function bindEvents() {
@@ -1171,6 +1322,10 @@
 
         if (tabName === "fragments") renderFragments();
 
+        if (tabName === "chat") {
+          renderCardChatPicker();
+        }
+
         if (tabName === "companion") {
           renderCompanionTotal();
           maybeCreateCompanionInvite();
@@ -1183,16 +1338,23 @@
       });
     });
 
-    $("sendChatBtn").addEventListener("click", sendChat);
+    bindIfExists("sendChatBtn", "click", sendChat);
 
-    $("chatInput").addEventListener("keydown", event => {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        sendChat();
-      }
-    });
+    const chatInput = $("chatInput");
+    if (chatInput) {
+      chatInput.addEventListener("keydown", event => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          sendChat();
+        }
+      });
+    }
 
-    $("addCardsBtn").addEventListener("click", () => {
+    bindIfExists("cardChatModeBtn", "click", toggleCardChatMode);
+    bindIfExists("sendCardChatBtn", "click", sendCardChat);
+    bindIfExists("clearCardChatBtn", "click", clearCardChatSelection);
+
+    bindIfExists("addCardsBtn", "click", () => {
       const added = addCardsFromText($("cardInput").value, $("cardCategoryInput").value);
 
       $("cardInput").value = "";
@@ -1204,66 +1366,75 @@
       }
     });
 
-    $("clearCardsBtn").addEventListener("click", () => {
+    bindIfExists("clearCardsBtn", "click", () => {
       if (!confirm("确定清空字卡库吗？")) return;
 
       state.cardSystem.customReplies = [];
       state.cardSystem.customReplyGroups = [];
       state.cardSystem.disabledReplyItems = [];
+      selectedCardChatCards = [];
       saveState();
       renderCards();
+      renderCardChatPicker();
     });
 
-    $("exportCardsBtn").addEventListener("click", exportCardJSON);
+    bindIfExists("exportCardsBtn", "click", exportCardJSON);
 
-    $("importCardsFile").addEventListener("change", async event => {
-      const file = event.target.files[0];
-      if (!file) return;
+    const importCardsFile = $("importCardsFile");
+    if (importCardsFile) {
+      importCardsFile.addEventListener("change", async event => {
+        const file = event.target.files[0];
+        if (!file) return;
 
-      try {
-        const text = await readFileAsText(file);
-        const data = JSON.parse(text);
+        try {
+          const text = await readFileAsText(file);
+          const data = JSON.parse(text);
 
-        importCardJSON(data);
-        alert("字卡导入完成。");
-      } catch (error) {
-        alert("导入失败：JSON 格式不正确，或文件内容不兼容。");
-        console.warn(error);
-      }
+          importCardJSON(data);
+          alert("字卡导入完成。");
+        } catch (error) {
+          alert("导入失败：JSON 格式不正确，或文件内容不兼容。");
+          console.warn(error);
+        }
 
-      event.target.value = "";
-    });
+        event.target.value = "";
+      });
+    }
 
-    $("fragmentImage").addEventListener("change", handleFragmentImageChange);
-    $("saveFragmentBtn").addEventListener("click", saveFragment);
-    $("exportFragmentsBtn").addEventListener("click", exportFragments);
-    $("clearFragmentsBtn").addEventListener("click", clearFragments);
+    bindIfExists("fragmentImage", "change", handleFragmentImageChange);
+    bindIfExists("saveFragmentBtn", "click", saveFragment);
+    bindIfExists("exportFragmentsBtn", "click", exportFragments);
+    bindIfExists("clearFragmentsBtn", "click", clearFragments);
 
-    $("fragmentSearchInput").addEventListener("input", renderFragments);
-    $("clearFragmentSearchBtn").addEventListener("click", () => {
+    bindIfExists("fragmentSearchInput", "input", renderFragments);
+
+    bindIfExists("clearFragmentSearchBtn", "click", () => {
       $("fragmentSearchInput").value = "";
       renderFragments();
     });
 
-    $("settingsOpenBtn").addEventListener("click", openSettings);
-    $("settingsCloseBtn").addEventListener("click", closeSettings);
-    $("saveSettingsBtn").addEventListener("click", saveSettings);
+    bindIfExists("settingsOpenBtn", "click", openSettings);
+    bindIfExists("settingsCloseBtn", "click", closeSettings);
+    bindIfExists("saveSettingsBtn", "click", saveSettings);
 
-    $("exportAllBtn").addEventListener("click", exportAll);
+    bindIfExists("exportAllBtn", "click", exportAll);
 
-    $("importAllFile").addEventListener("change", async event => {
-      const file = event.target.files[0];
-      if (!file) return;
+    const importAllFile = $("importAllFile");
+    if (importAllFile) {
+      importAllFile.addEventListener("change", async event => {
+        const file = event.target.files[0];
+        if (!file) return;
 
-      try {
-        await importAll(file);
-      } catch (error) {
-        alert("导入失败：文件格式不正确。");
-        console.warn(error);
-      }
+        try {
+          await importAll(file);
+        } catch (error) {
+          alert("导入失败：文件格式不正确。");
+          console.warn(error);
+        }
 
-      event.target.value = "";
-    });
+        event.target.value = "";
+      });
+    }
 
     document.querySelectorAll(".duration-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -1272,26 +1443,29 @@
       });
     });
 
-    $("endCompanionBtn").addEventListener("click", () => endCompanion("manual"));
+    bindIfExists("endCompanionBtn", "click", () => endCompanion("manual"));
 
-    $("acceptCompanionInviteBtn").addEventListener("click", acceptCompanionInvite);
-    $("declineCompanionInviteBtn").addEventListener("click", declineCompanionInvite);
+    bindIfExists("acceptCompanionInviteBtn", "click", acceptCompanionInvite);
+    bindIfExists("declineCompanionInviteBtn", "click", declineCompanionInvite);
 
-    $("dailyLetterEnabled").addEventListener("change", () => {
+    bindIfExists("dailyLetterEnabled", "change", () => {
       state.settings.dailyLetterEnabled = $("dailyLetterEnabled").checked;
       saveState();
     });
 
-    $("checkLetterBtn").addEventListener("click", checkDailyLetter);
-    $("forceLetterBtn").addEventListener("click", forceLetter);
-    $("exportLettersBtn").addEventListener("click", exportLetters);
-    $("clearLettersBtn").addEventListener("click", clearLetters);
+    bindIfExists("checkLetterBtn", "click", checkDailyLetter);
+    bindIfExists("forceLetterBtn", "click", forceLetter);
+    bindIfExists("exportLettersBtn", "click", exportLetters);
+    bindIfExists("clearLettersBtn", "click", clearLetters);
 
-    $("settingsModal").addEventListener("click", event => {
-      if (event.target === $("settingsModal")) {
-        closeSettings();
-      }
-    });
+    const modal = $("settingsModal");
+    if (modal) {
+      modal.addEventListener("click", event => {
+        if (event.target === modal) {
+          closeSettings();
+        }
+      });
+    }
   }
 
   function init() {
