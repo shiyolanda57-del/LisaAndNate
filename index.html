@@ -34,12 +34,28 @@
         <p data-lisa-text="你发消息，{name} 从字卡库随机组合 1-4 张字卡回复。">你发消息，Lisa 从字卡库随机组合 1-4 张字卡回复。</p>
       </div>
 
-      <div id="chatList" class="chat-list"></div>
+<div class="chat-mode-box">
+  <div class="chat-mode-head">
+    <button id="cardChatModeBtn" class="secondary-btn" type="button">进入字卡对话模式</button>
 
-      <div id="typingIndicator" class="typing-indicator hidden">
-        <span id="typingName">Lisa</span> 正在输入
-        <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
-      </div>
+    <label class="chat-delay-label">
+      模式内 Lisa 回复等待秒数
+      <input id="cardChatDelayInput" type="number" min="0" step="1" value="2" />
+    </label>
+  </div>
+
+  <div id="cardChatPicker" class="card-chat-picker hidden">
+    <div class="hint">当前模式下，你只能从字卡库里选择字卡发送。</div>
+
+    <div id="cardChatSelected" class="card-chat-selected"></div>
+    <div id="cardChatList" class="card-chat-list"></div>
+
+    <div class="button-row">
+      <button id="sendCardChatBtn" class="primary-btn" type="button">发送所选字卡</button>
+      <button id="clearCardChatBtn" class="secondary-btn" type="button">清空选择</button>
+    </div>
+  </div>
+</div>
 
       <div class="input-row">
         <textarea id="chatInput" placeholder="写点什么……" rows="2"></textarea>
