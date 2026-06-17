@@ -757,3 +757,88 @@ hr {
     flex-direction: column;
   }
 }
+/* ===== Card chat mode ===== */
+
+.chat-mode-box {
+  margin: 0 0 14px;
+  padding: 14px;
+  border: 1px solid rgba(122, 86, 55, 0.13);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.chat-mode-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.chat-delay-label {
+  width: 210px;
+}
+
+.chat-delay-label input {
+  margin-top: 6px;
+}
+
+.card-chat-picker {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
+.card-chat-selected {
+  min-height: 42px;
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(122, 86, 55, 0.06);
+}
+
+.card-chat-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.card-chat-choice {
+  border: 1px solid rgba(122, 86, 55, 0.16);
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: #f3ddc5;
+  color: #513622;
+  font-size: 13px;
+}
+
+.card-chat-choice.selected {
+  background: var(--accent);
+  color: #fff8ef;
+}
+
+body.card-chat-mode #chatInput {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+body.card-chat-mode #sendChatBtn {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+@media (max-width: 720px) {
+  .chat-mode-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .chat-delay-label {
+    width: 100%;
+  }
+}
